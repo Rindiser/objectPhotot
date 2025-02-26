@@ -1,2 +1,11 @@
-setting.ini
-Motivation_dag.txt
+# Ignore all files
+*
+
+# Exclude (do not ignore) all .ahk files
+!*.ahk
+
+# Optional: Ensure directories themselves aren't ignored
+!*/
+
+# Exclude the .gitignore file itself
+!.gitignore
