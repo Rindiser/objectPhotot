@@ -245,7 +245,7 @@ Gui, 3: Add, Progress, -Smooth vWorking 0x8 w250 h18 ; PBS_MARQUEE = 0x8
 
 return
 
-;set tabStops
+;set tabStops 
 RadioTab:
 	Gui, Submit, NoHide
 		; Determine which radio button is selected by checking each variable
