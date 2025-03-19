@@ -17,7 +17,11 @@ Gui, 1: +Hwndgui_id
 $_Bilde_vist := 0			; Skal brukes i Rename: for å sjekk omman har hentet et bile med Vis_Bilde: da skal den ha verdien 1
 
 Suff := 1
-tabStop = 
+tabStop = NewName
+commentClean = True
+motivClean = True
+fotoWithheld = True
+
 
 
   FileReadLine, Prefix, %A_ScriptDir%\Preferences.txt, LineNum 1                                           	 ; the prefix of the files to search for
@@ -28,8 +32,11 @@ tabStop =
   FileReadLine, $_Fotostasjon, %A_ScriptDir%\Preferences.txt, LineNum 7										; fotostasjonnummer
   FileReadLine, umappe, %A_ScriptDir%\Preferences.txt, LineNum 8										; mappe der bildene skal valideres av zbar
   FileReadLine, motivValg, %A_ScriptDir%\Preferences.txt, LineNum 9
-  
+  FileReadLine, fotografValg, %A_ScriptDir%\Preferences.txt, LineNum 10
+ 
 SetWorkingDir %mappe%                               														 ; Ensures a consistent starting directory.
+
+
 
 Gui, 1:  Add, Tab2,h857 w1167, Program||Settings|About
 Gui, 1:  tab, Program
@@ -39,96 +46,111 @@ Gui, 1: Add, Text, x30 y50 w300 h50 , Zoo Foto
 Gui, 1: font, 	; tilbake til default font
 
 
+Gui, 1: Add, Progress, x20 y90 w270  h200 Backgroundc2e5cd +disabled,
+	;--  Tab stop
+	Gui, 1: font, s12 cNavy, Arial
+	Gui, 1: Add, GroupBox, x30 y110 w100 h100 -BackgroundTrans , Tab stop
+	Gui, 1: font, 
+	Gui, 1: Add, Radio, x40 y140 vRadioVar1 gRadioTab Checked +BackgroundTrans, AccNo
+	Gui, 1: Add, Radio, vRadioVar2 gRadioTab , Kommetar
+	Gui, 1: Add, Radio,vRadioVar3 gRadioTab , Motiv
 
-Gui, 1:  Add, Button, x30 y110 w100 h50 gNytt_Vis_bilde v$VisBilde Default , &Hent bilde `nNytt objekt
-Gui, 1:  Add, Button, x30 y170 w100 h50 gSammeobj_Vis_bilde v$VisBilde_sammeobj +Disabled, Hent bilde `n&Samme objekt
-Gui, 1: Add, Button, x30 y230 w100 h50 gLabel v$_LabelKnapp +Disabled, Hent bilde `nLabel
-
-Gui, 1: font, Bold, Arial
-Gui, 1: Add, Text, x140 y110 w90 h20 , Originalt filnavn
-Gui, 1: Add, Edit, r1 x140 y130 w150 h20 VOldName +disabled, 
-
-Gui, 1: font, s10 cRed Bold, Arial
-Gui, 1: Add, Text, x140 y170 w140 h30 , AccNo (= nytt filnavn)
-Gui, 1: font, 	; tilbake til default font
-Gui, 1: Add, Edit, r1 x140 y190 w150 h20 vNewName limit20,
-Gui, 1: Add, Text, x298 y170 w80 h20 , Bilde nr.
-Gui, 1: Add, Edit, r1 x298 y190 w40 h20 vSuffix , %Suff%
+	Gui, 1: Add, Button, x180 y110 w100 h50 gNytt_Vis_bilde v$VisBilde Default , &Hent bilde `nNytt objekt
+	Gui, 1: Add, Button, x180 y170 w100 h50 gSammeobj_Vis_bilde v$VisBilde_sammeobj +Disabled , Hent bilde `n&Samme objekt
+	Gui, 1: Add, Button, x180 y230 w100 h50 gLabel v$_LabelKnapp +Disabled , Hent bilde `nLabel
 
 
-Gui, 1: Add, Text, x360 y110 w90 h20 , Kommentar 
-Gui, 1: Add, Edit, x360 y130 w310 h60 vbildeKommentar, 
+Gui, 1: Add, Progress, x340 y90 w420  h250 Backgroundc2e5cd +disabled,
+	Gui, 1: Add, Text, x360 y110 w90 h20 +BackgroundTrans, Kommentar 
+	Gui, 1: Add, Edit, x360 y130 w310 h60 vbildeKommentar, 
+	
+	Gui, 1: Add, Radio, x700 y140 gRadioComment Checked +BackgroundTrans, Behold
+	Gui, 1: Add, Radio, gRadioComment, Tøm
 
-;- motiv
-Gui, 1: Add, Text, x360 y200 w140 h30 , Motiv
-Gui, 1: Add, ComboBox, x360 y215 w310 vmotiv, %motivValg%
+	Gui, 1: Add, Text, x360 y210 w140 h30 +BackgroundTrans, Motiv
+	Gui, 1: Add, ComboBox, x360 y225 w310 vmotiv, %motivValg%
 
-;--  Tab stop
-Gui, 1: font, s12 cNavy, Arial
-Gui, 1: Add, GroupBox, x730 y110 w100 h100 , Tab stop
-Gui, 1: font, 
-Gui, 1: Add, Radio, x740 y140 vRadioVar1 gRadioTab Checked, AccNo
-Gui, 1: Add, Radio, vRadioVar2 gRadioTab,Kommetar
-Gui, 1: Add, Radio,vRadioVar3 gRadioTab,Motiv
+	Gui, 1: Add, Radio, x700 y220 gRadioMotiv Checked +BackgroundTrans, Behold
+	Gui, 1: Add, Radio, gRadioMotiv, Tøm
 
+	Gui, 1: Add, Text, x360 y290 w140 h30 +BackgroundTrans, Fotograf
+	Gui, 1: Add, ComboBox, x360 y305 w310 vfotograf, %fotografValg%
 
-Gui, 1: Add, Button, x730 y230 w100 h50 gRenameFiles v$_RenameFiles +Disabled, Endre navn og flytt fila!
+	Gui, 1: Add, Text, x680 y290 w140 h30 +BackgroundTrans, Tillat nettpublisering
+	Gui, 1: Add, Radio, x700 y305 gRadioPub Checked +BackgroundTrans, Ja
+	Gui, 1: Add, Radio, gRadioPub, Nei
 
 
+Gui, 1: Add, Progress, x800 y90 w270  h250 Backgroundc2e5cd +disabled,
+	Gui, 1: font, Bold, Arial
+	Gui, 1: Add, Text, x840 y110 w90 h20 +BackgroundTrans, Originalt filnavn
+	Gui, 1: Add, Edit, r1 x840 y130 w150 h20 VOldName +disabled , 
+
+
+	Gui, 1: Add, Text, x840 y170 w140 h30 +BackgroundTrans , AccNo (= nytt filnavn)
+	Gui, 1: Add, Edit, r1 x840 y190 w150 h20 vNewName limit20,
+	Gui, 1: Add, Text, x1000 y170 w80 h20 +BackgroundTrans, Bilde nr.
+	Gui, 1: Add, Edit, r1 x1000 y190 w40 h20 vSuffix , %Suff%
+
+
+	Gui, 1: Add, Button, x870 y250 w100 h50 gRenameFiles v$_RenameFiles +Disabled , Endre navn og flytt fila!
+
+; skille mellom topp og bunn
+Gui, 1: Add, Progress, x15 y430 w1155  h5 BackgroundGreen +disabled,
 
 ;===============================================================================
 ;Listview over objekter og navn
 ;===============================================================================
-Gui, 1: font, s10 cNavy w700, Arial
-Gui, Add, GroupBox, x460 y300 w530 h555 , Prosesserte filer
+Gui, 1: font, s10 cNavy , Arial
+Gui, Add, GroupBox, x460 y450 w530 h405 , Prosesserte filer
 Gui, 1: font, 	; tilbake til default font
 
-Gui, 1: Add, Button, x470 y320 w150 h30 gList_taxa_objects, Oppdater Prosesserte filer
+Gui, 1: Add, Button, x470 y470 w150 h30 gList_taxa_objects , Oppdater Prosesserte filer
 
 Gui, 1: font, Italic, Arial
-Gui, 1: Add, Text, x765 y335 w220 h20 , Working folder\TaxonName_Object_list.txt
+Gui, 1: Add, Text, x765 y475 w220 h20 , Working folder\TaxonName_Object_list.txt
 Gui, 1: font, 	; tilbake til default font
 
-Gui, 1: Add, ListView, x470 y360 w510 h480 Grid v$_Objekt_taxa, lnr|AccNo|ItemNo|BildeNo|Bildefilnavn|Kommentar
+Gui, 1: Add, ListView, x470 y510 w510 h330 Grid v$_Objekt_taxa, lnr|AccNo|BildeNo|Bildefilnavn|Kommentar|Motiv
 gosub List_taxa_objects
  
 
 ;===============================================================================
 Gui, 1: tab, Program
 
-Gui, 1: Add, Picture, x40 y400 vPic ,
+Gui, 1: Add, Picture, x40 y458 vPic ,
 
 
 ;===============================================================================
 ;ListView over filene i arbeidsmappa og destinasjonsmappa
 ;===============================================================================
-Gui, 1: font, s10 cNavy w700, Arial
-Gui, Add, GroupBox, x1000 y300 w160 h555 , Bildefoldere
+Gui, 1: font, s10 cNavy, Arial
+Gui, Add, GroupBox, x1000 y450 w160 h405 , Bildefoldere
 Gui, 1: font, 	; tilbake til default font
 
-Gui, 1: Add, Button, x1010 y320 w140 h30 gRefresh, Oppdater filliste
+Gui, 1: Add, Button, x1010 y470 w140 h30 gRefresh , Oppdater filliste
 
 ;------------------------------------------------------------------------------
 ; Working folder
 ;------------------------------------------------------------------------------
 Gui, 1: font, s12 cNavy w140, Arial
-Gui, 1: Add, Text, x1010 y360 w140 h30 , Working folder
+Gui, 1: Add, Text, x1025 y510 h30 , Working folder
 Gui, 1: font, 	; tilbake til default font
 
-Gui, 1: Add, ListView, x1010 y382 w140 h100  v$worklist , Alle bildefiler (*.jpg):
+Gui, 1: Add, ListView, x1010 y532 w140 h100  v$worklist , Alle bildefiler (*.jpg):
 Loop, %mappe%\*.jpg						; Gather a list of file names from a folder and put them into the ListView:
    LV_Add("", A_LoopFileName)
 
-Gui, 1: Add, Button, x1010 y492 w140 h30 gOpenwork,Åpne Working folder
+Gui, 1: Add, Button, x1010 y637 w140 h30 gOpenwork , Åpne Working folder
 
 ;------------------------------------------------------------------------------
 ; Destination folder
 ;------------------------------------------------------------------------------
-Gui, 1: font, s12 cNavy w140, Arial
-Gui, 1: Add, Text, x1010 y540 w140 h30 , Destination folder
+Gui, 1: font, s12 cNavy, Arial
+Gui, 1: Add, Text, x1017 y692 h30 , Destination folder
 Gui, 1: font, 	; tilbake til default font
 
-Gui, 1: Add, ListView, x1010 y562 w140 h240 v$destview, Alle bildefiler (*.jpg):
+Gui, 1: Add, ListView, x1010 y715 w140 h93 v$destview, Alle bildefiler (*.jpg):
 Loop, %dest%\*.jpg						; Gather a list of file names from a folder and put them into the ListView:
     LV_Add("", A_LoopFileName)
 
@@ -139,55 +161,6 @@ Gui, 1: Add, Button,  x1010 y812 w140 h30 gOpendest, Åpne Destination folder
 
 NewName := $aa  ;Bruker verdien 0 for å sjekke om man har husket å legge inn et nytt navn, se slutten av programmet
 
-;===============================================================================
-;Motivation part
-;===============================================================================
-Gui, 1: font, s10 cNavy w700, Arial
-Gui, Add, GroupBox, x900 y50 w260 h240 , Antall bilder
-Gui, 1: font, 	; tilbake til default font
-
-Gui, 1: Add, Text, x910 y70 w40 h30 , Totalt
-Gui, 1: Add, Edit, Right r1 x910 y90 w40 h30 v$tot +disabled, 
-Gui, 1: Add, Text, x1000 y70 w40 h30 , I går
-Gui, 1: Add, Edit, Right r1 x1000 y90 w40 h30 v$Gaar +disabled, 
-Gui, 1: Add, Progress, Vertical  vMyProgressGaard x1007 y200 w30 h80 , 
-Gui, 1: Add, Text, x1090 y70 w40 h30 , I dag
-Gui, 1: Add, Edit, Right r1 x1090 y90 w40 h30 v$Dags +disabled, 
-Gui, 1: Add, Progress, Vertical vMyProgressDags x1097 y200 w30 h80 , 
-
-
-
-	;=============================================================
-	;Dagens dato
-	;=============================================================
-	FormatTime, $dagensdato, ,MMdd
-
-	$Yesterday = %a_now%
-	$Yesterday += -1, days
-	FormatTime, $Yesterday, %$Yesterday%, MMdd
-
-	;=============================================================
-
-
-
-  FileReadLine, $ddato, %A_ScriptDir%\Motivation_dag.txt, LineNum 1                                           	 ; dagensdato
-  FileReadLine, $dantall,%A_ScriptDir%\Motivation_dag.txt, LineNum 2                              		     	 ; antall bilder tatt i dag
-  FileReadLine,  $Yday, %A_ScriptDir%\Motivation_dag.txt, LineNum 3                                     		    	; gårsdagensdato
-  FileReadLine, $gantall, %A_ScriptDir%\Motivation_dag.txt, LineNum 4                                           	 ; antall bilder tatt i går
-  FileReadLine, $totantall, %A_ScriptDir%\Motivation_dag.txt, LineNum 5                                           	 ; antall bilder tatt totalt
-					
-if ($dagensdato = $ddato) {
-    ; No action is specified for this condition
-} else if ($ddato = $Yesterday) {
-    ; If the date in the file matches yesterday's date, update
-    Gosub, UpdateFromYesterday
-} else {
-    ; If the date is older, use a different update method
-    Gosub, UpdateFromEarlier
-}
-
-; Always update motivation, regardless of the date
-Gosub, UpdateMotivation
 
 
 ;===============================================================================
@@ -220,6 +193,14 @@ Gui, 1: Add, Text, r1 x72 y300 , Skriv inn valg til motivfeltet, skill valgene d
 Gui, 1: font,
 Gui, 1: Add, Text, r3 x72 y320 ,Lateral|Ventral|Habitus
 Gui, 1: Add, Edit, r1 x72 y340 w450  vmotivValg , %motivValg%
+
+
+;--- Fotograf
+
+Gui, 1: font, bold, Arial
+Gui, 1: Add, Text, r1 x72 y400 , Skriv inn fotograf, en per linje
+Gui, 1: font,
+Gui, 1: Add, Edit, x72 y440 w450  h120 vfotografValg , %fotografValg%
 
 
 Gui, 1: Add, Button, gSavePref x650 y500 w100 h50 , Save Settings
@@ -257,6 +238,19 @@ RadioTab:
 			tabStop := "motiv"
 Return
 
+; set empty or keep Comments
+RadioComment:
+	commentClean := !commentClean
+Return
+
+
+RadioMotiv:
+	motivClean := !motivClean
+Return
+
+RadioPub:
+	fotoWithheld := !fotoWithheld
+Return
 
 
 ;===================================================================================
@@ -268,78 +262,6 @@ WM_Command( wp, lp ) {
   If ( (wp >> 16) = 0x100 && lp = TaN ) { ; EN_SETFOCUS = 0x100  Bit shift left (<<) and right (>>). hexadecimal (also base 16, or hex) 0x100 =  SS_NOTIFY
     GuiControl,,$_Skuffenummer  	
 }}
-
-
-;===============================================================================
-;Motivation part GUI progress bars
-;===============================================================================
-
-UpdateFromYesterday:
- 
-	$gantall =
-	$gantall := $dantall
-	$dantall =
-
-	FileDelete, %A_ScriptDir%\Motivation_dag.txt
-	FileAppend, %$dagensdato%`n, %A_ScriptDir%\Motivation_dag.txt,                                         	 ; dagensdato
-	FileAppend, %$dantall%`n, %A_ScriptDir%\Motivation_dag.txt,                                       	 ; antall bilder tatt i dag
-	FileAppend, %$Yesterday%`n, %A_ScriptDir%\Motivation_dag.txt,                                         	 ; dagensdato
-	FileAppend, %$gantall%`n, %A_ScriptDir%\Motivation_dag.txt,                                       	 ; antall bilder tatt i dag
-	FileAppend, %$totantall%`n, %A_ScriptDir%\Motivation_dag.txt,                                       	 ; antall bilder tatt i dag
-
-return
-
-UpdateFromEarlier:
- 
-	$gantall =
-	$dantall =
-
-	FileDelete, %A_ScriptDir%\Motivation_dag.txt
-	FileAppend, %$dagensdato%`n, %A_ScriptDir%\Motivation_dag.txt,                                         	 ; dagensdato
-	FileAppend, %$dantall%`n, %A_ScriptDir%\Motivation_dag.txt,                                       	 ; antall bilder tatt i dag
-	FileAppend, %$Yesterday%`n, %A_ScriptDir%\Motivation_dag.txt,                                         	 ; dagensdato
-	FileAppend, %$gantall%`n, %A_ScriptDir%\Motivation_dag.txt,                                       	 ; antall bilder tatt i dag
-	FileAppend, %$totantall%`n, %A_ScriptDir%\Motivation_dag.txt,                                       	 ; antall bilder tatt i dag
-
-return
-
-UpdateMotivation:
-
-    ; Update GUI Controls
-    GuiControl, 1:, $tot, %$totantall%
-    GuiControl, 1:, $Gaar, %$gantall%
-    GuiControl, 1:, $Dags, %$dantall%
-
-    ; Update Status Bar for MyProgressGaard
-    UpdateProgressBar($gantall, "MyProgressGaard")
-    
-    ; Update Status Bar for MyProgressDags
-    UpdateProgressBar($dantall, "MyProgressDags")
-
-return
-
-UpdateProgressBar(Count, ControlName) {
-    if Count < 100
-        Color := "Red"
-    else if Count < 200
-        Color := "Blue"
-    else if Count < 300
-        Color := "Purple"
-    else if Count < 400
-        Color := "Silver"
-    else if Count < 500
-        Color := "Lime"
-    else if Count < 600 && ControlName = "MyProgressDags"
-        Color := "Black"
-    else if Count < 700 && ControlName = "MyProgressDags"
-        Color := "Maroon"
-    else
-        Color := "Green"
-
-    GuiControl, 1:+c%Color%, %ControlName%
-    GuiControl, 1:, %ControlName%, %Count%
-}
-
 
 
 ;===============================================================================
@@ -367,11 +289,11 @@ Refresh:
 	{
 		If A_index < 2 				; for å unngå blank linje
 		{
-		Listdest = %Listdest%%A_LoopFileTimeAccessed%|%A_LoopFileName%	
+			Listdest = %Listdest%%A_LoopFileTimeAccessed%|%A_LoopFileName%	
 		}
 		else
 		{
-		Listdest = %Listdest%`n%A_LoopFileTimeAccessed%|%A_LoopFileName%
+			Listdest = %Listdest%`n%A_LoopFileTimeAccessed%|%A_LoopFileName%
 		}
 
 	}					; Gather a list of file names from a folder and put them into the ListView:
@@ -419,7 +341,6 @@ Destmappe:
 	{
 	GuiControl, 1:, dest, %dest%
 	}
-
 return
   
   
@@ -430,7 +351,9 @@ return
 SavePref:
   FileDelete, %A_ScriptDir%\Preferences.txt
   Gui 1:  submit, NoHide
-			
+	
+  fixedFotograf := fixFotograf(fotografValg)
+
 	;======================================
 	;Write variables to file
 	;======================================
@@ -444,10 +367,16 @@ SavePref:
 	FileAppend, %$_Fotostasjon%`n, %A_ScriptDir%\Preferences.txt
 	FileAppend, %umappe%`n, %A_ScriptDir%\Preferences.txt
 	FileAppend, %motivValg%`n, %A_ScriptDir%\Preferences.txt
-	
+	FileAppend, %fixedFotograf%`n, %A_ScriptDir%\Preferences.txt
 	Reload 
 					  
 Return
+
+fixFotograf(fotografValg) {
+	fixedFotograf := StrReplace(fotografValg, "`n", "|")
+	Return fixedFotograf
+}
+
 
 
 List_taxa_objects:
@@ -456,6 +385,10 @@ List_taxa_objects:
 	LV_Delete()
 	Loop, read, %dest%\TaxonName_Object_list.txt
 	{
+		if (A_Index = 1)
+		{
+			Continue
+		}
 		StringSplit, item, A_LoopReadLine, `|
 		LV_Add("",A_index,item1,item2,item3,item4,item5,item6)	
 	}
@@ -541,7 +474,6 @@ Vis_bilde:
         MsgBox, Ingen bilder med riktig Prefiks i mappa
         Cleanup()
     }
-
 Return
 
 EnableControls() {
@@ -587,6 +519,22 @@ Return
         }
 	return
 
+;==========================================================================
+; TAa boppdages og håndteres hvis det aktive vinduet ZooCollPhoto
+;==========================================================================
+
+#IfWinActive, ZooCollPhoto
+Tab::
+	; Henter gjeldende fokuserte kontroll
+	GuiControlGet, SkannerFokus, FocusV	
+	if (SkannerFokus = "NewName") {
+		GuiControl, 1: focus , bildeKommentar
+	} else if (SkannerFokus = "bildeKommentar") {
+		GuiControl, 1: focus , motiv
+	} else {
+		GuiControl, 1: focus , NewName
+	}
+return
 
 ;===========================================================================================
 ;Rename filer og flytt dem
@@ -594,32 +542,16 @@ Return
 
 Nytt_Vis_bilde:
 	$_Same_or_New := 1
-
 	gosub , EmptyEdits
 	goto Vis_bilde
-	return
+return
 
-	Sammeobj_Vis_bilde:
-
+Sammeobj_Vis_bilde:
 	$_Same_or_New := 2
-
-
 	gosub Vis_bilde
-
-	if $ManueltBilde = 0
-	{
+	; NotEmptyEdits teller også opp Suffix
 	gosub , NotEmptyEdits
-	}
-	else
-	{
-		InputBox, $ManeueltBildeNummer, Bilde nummer, skriv inn bildenummer, , , 
-	if ErrorLevel
-	return
-	else
-	
-		gosub, NotEmptyEditsManual
-	}
-
+	GuiControl, 1: focus , %tabStop%
 	goto RenameFiles
 return
 
@@ -633,29 +565,29 @@ Label:
 	$_Same_or_New := 2
 	gosub Vis_bilde
 	gosub , NotEmptyEdits
+	GuiControl, 1: focus , %tabStop%
 	goto , RenameFiles
+	
 return
 
 
 
 RenameFiles:
 	Gui 1:  submit, NoHide
-	StringLen, filNavnLengde, NewName ; for å sjekkat at filnavnet er riktig lengde
-
+	orgAccNo := NewName
+	NewName := StrReplace(NewName, "/", "_")
+	; Check if NewName ends with "-P"
+	if (SubStr(NewName, -1) = "-P") ; Using -1 to capture the last two characters
+		{
+			; Remove "-P" from the end
+			NewName := SubStr(NewName, 1, StrLen(NewName) - 2)
+		}
+		
     if ($_Bilde_vist <> 1) {
         MsgBox, Ingen bilde er funnet. Trykk "Hent bilde"
         return
     }
     
-    if (!testNyttFilNavn(NewName, filNavnLengde)) {
-        return
-    }
-
-
-    ; Trim barcode number and split it
-    StringTrimRight, NewName, NewName, 2
-    StringSplit, $_deltnavn, NewName, /
-
 	;===========================================================================================
 	;Vis Please wait bar
 	;===========================================================================================
@@ -667,26 +599,32 @@ RenameFiles:
 	global	$_Filnavn
 		
 	FileSetTime , , %OutNameNoExt%.jpg , A
-	if ($_label = 1) {
-		if (Suffix <> "") {
-			FileMove ,%OutNameNoExt%.jpg, %dest%\%$_deltnavn1%_%$_deltnavn2%_%Suffix%_Label.jpg, 0
-			$_Filnavn = %$_deltnavn1%_%$_deltnavn2%_%Suffix%_Label.jpg				
-		}
-		else {
-		FileMove ,%OutNameNoExt%.jpg, %dest%\%$_deltnavn1%_%$_deltnavn2%_Label.jpg, 0
-		$_Filnavn = %$_deltnavn1%_%$_deltnavn2%_Label.jpg
-		}
-	} else {
+	; Set base new file name
+	baseFileName := NewName
 
-		if (Suffix <> "") {
-			FileMove ,%OutNameNoExt%.jpg, %dest%\%$_deltnavn1%_%$_deltnavn2%_%Suffix%.jpg, 0
-			$_Filnavn = %$_deltnavn1%_%$_deltnavn2%_%Suffix%.jpg
-		}
-		else {
-			FileMove ,%OutNameNoExt%.jpg, %dest%\%$_deltnavn1%_%$_deltnavn2%.jpg, 0
-			$_Filnavn = %$_deltnavn1%_%$_deltnavn2%.jpg
-		}
+	; Append suffix if it is not empty
+	if (Suffix <> "") {
+		baseFileName .= "_" . Suffix
 	}
+
+	; Append label if $_label is 1
+	if ($_label = 1) {
+		baseFileName .= "_Label"
+	}
+
+	; Construct full new file name
+	newFileName := baseFileName . ".jpg"
+
+	; Move the file to the destination and update the global variable
+	FileMove, %OutNameNoExt%.jpg, %dest%\%newFileName%, 0
+	$_Filnavn := newFileName
+
+	if(!fotoWithheld){
+		fotoStatus := "Nei"
+	} else {
+		fotoStatus := "Ja"
+	}
+
 
 	ErrorCount := ErrorLevel
 
@@ -700,67 +638,28 @@ RenameFiles:
 		Gui, 1: Show,,
 		Return
 	} else {
-		gosub , UpDateMotivationCount				;Oppdaterer motivasjonsdelen
 		Gui, 3: Hide
 		SetTimer , Scroll , Off
 		GuiControl, 1: Hide, Pic, 
 		
-		MsgBox, %dest%
 		; så det ikke blir problemer med tomme linjer
 		filePath = %dest%\TaxonName_Object_list.txt
 		if FileExist(filePath) {
-			FileAppend , `n%$_deltnavn1%|%$_deltnavn2%|%Suffix%|%$_Filnavn%|%$_Kommentar%|%$_Fotostasjon%, %dest%\TaxonName_Object_list.txt
+			FileAppend , `n%orgAccNo%|%Suffix%|%$_Filnavn%|%bildeKommentar%|%motiv%|%$_Fotostasjon%|%fotograf%|%fotoStatus%, %dest%\TaxonName_Object_list.txt
 		} else {
-			; AccNo|ItemNo|BildeNo|Kommentar|Bildefilnavn|Stasjon
-			FileAppend , AccNo|ItemNo|BildeNo|Bildefilnavn|Kommentar|Stasjon`n%$_deltnavn1%|%$_deltnavn2%|%Suffix%|%$_Filnavn%|%$_Kommentar%|%$_Fotostasjon%, %dest%\TaxonName_Object_list.txt	
+			; AccNo|ItemNo|BildeNo|Kommentar|Bildefilnavn|Stasjon|Fotgraf|tillat nettpublisering
+			FileAppend , AccNo|BildeNo|Bildefilnavn|Kommentar|Motiv|Stasjon|Fotograf|tillat nettpublisering`n%orgAccNo%|%Suffix%|%$_Filnavn%|%bildeKommentar%|%motiv%|%$_Fotostasjon%|%fotograf%|%fotoStatus%, %dest%\TaxonName_Object_list.txt	
 		}
-		gosub , UpdateMotivation
 		gosub , List_taxa_objects		
 		gosub , Refresh			;oppdaterer listview		
 	}
 
 	$_label := 0
 	$_Bilde_vist := 0			; Skal brukes i Rename: for å sjekk omman har hentet et bile med Vis_Bilde: da skal den ha verdien 1
-	GuiControl, 1: focus , NewName
+	GuiControl, 1: focus , %tabStop%
 	GuiControl, 1: Disable, $_RenameFiles
-
 return
 
-testNyttFilNavn(NewName, filNavnLengde) {
-return true
-    ; Validate that NewName isn't empty
-    if (!NewName) {
-        MsgBox, 262160, , Du har glemt fil navn!
-        return False
-    }
-
-    ; Check the length of NewName
-    filNavnLengde := StrLen(NewName)
-    if (filNavnLengde < 13) {
-        ShowError("Filnavn har feil format (for kort)!")
-        return False
-    }
-
-    if (filNavnLengde > 19) {
-        ShowError("Filnavn har feil format (for langt)!")
-        return False
-    }
-
-    ; Ensure NewName starts with 'NHMO-BI-'
-    if (SubStr(NewName, 1, 8) != "NHMO-BI-") {
-        ShowError("Filnavn har feil format (begynner ikke med 'NHMO-BI-')!")
-        return False
-    }
-
-    ; Check '/' appearance position
-    SlashPos := InStr(NewName, "/")
-    if (SlashPos < 10 || SlashPos > 15) {
-        ShowError("Filnavn har feil format (trolig feil i prefix eller aksesjonsnummer)!")
-        return False
-    }
-
-    return True
-}
 
 ShowError(ErrorMessage) {
     SoundSet, 100
@@ -769,73 +668,34 @@ ShowError(ErrorMessage) {
 }
 
 
-
-
-
-
 EmptyEdits:				;tøm skrivefeltene
 	$null :=
 	GuiControl, 1:, NewName, %$null% 
 	GuiControl, 1:, OldName, %$null%
-	GuiControl, 1:, $_Kommentar, %$null%
 	GuiControl, 1:, Suffix, 1
-	GuiControl, 1: focus , NewName
+
+	if !commentClean
+		GuiControl, 1:, bildeKommentar, %$null%
+
+	if !motivClean
+		GuiControl, 1: Choose, motiv, 0	
+
+	GuiControl, 1: focus , %tabStop%
 	Gui, 1: Show,,
 return
 		
 NotEmptyEdits:
 	Suffix:=Suffix+1
-	GuiControl, 1:, $_Kommentar, %$null%
 	GuiControl, 1:, Suffix,%Suffix%
+	if !commentClean
+		GuiControl, 1:, bildeKommentar, %$null%
+
+	if !motivClean
+		GuiControl, 1: Choose, motiv, 0
+
 	GuiControl, 1: focus ,$VisBilde_sammeobj
 	Gui, 1: Show,,
 return
-
-
-NotEmptyEditsManual:
-	gui, 5: submit
-	gui, 5: Destroy
-
-	GuiControl, 1:, $_Kommentar, %$null%
-	GuiControl, 1:, Suffix,%$ManeueltBildeNummer%
-	GuiControl, 1: focus ,$VisBilde_sammeobj
-	Gui, 1: Show,,
-return
-
-
-UpDateMotivationCount:
-	;==============================================
-	; lagre antall filer tatt til motivasjonsdelen
-	;==============================================
-	if ($dantall < 1)
-	{
-		$dantall := 1
-	}
-	else
-	{
-		$dantall ++				; teller i motivasjonsdelen
-	}
-
-	if ($totantall < 1)
-	{
-		$totantall := $dantall
-	}
-
-	else
-	{
-		$totantall ++			; teller i motivasjonsdelen
-	}
-
-	FileDelete, %A_ScriptDir%\Motivation_dag.txt
-
-	FileAppend, %$dagensdato%`n,%A_ScriptDir%\Motivation_dag.txt,                                         	 ; dagensdato
-	FileAppend, %$dantall%`n, %A_ScriptDir%\Motivation_dag.txt,                                       	 ; antall bilder tatt i dag
-	FileAppend, %$Yesterday%`n, %A_ScriptDir%\Motivation_dag.txt,                                         	 ; dagensdato
-	FileAppend, %$gantall%`n,%A_ScriptDir%\Motivation_dag.txt,                                       	 ; antall bilder tatt i dag
-	FileAppend, %$totantall%`n,%A_ScriptDir%\Motivation_dag.txt,                                       	 ; antall bilder tatt i dag
-	;========================================================
-return
-
 
 ;==================================================================
 
