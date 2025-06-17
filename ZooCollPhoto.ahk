@@ -108,7 +108,7 @@ Gui, 1: font, 	; tilbake til default font
 Gui, 1: Add, Button, x470 y470 w150 h30 gList_taxa_objects , Oppdater Prosesserte filer
 
 Gui, 1: font, Italic, Arial
-Gui, 1: Add, Text, x765 y475 w220 h20 , Working folder\TaxonName_Object_list.txt
+Gui, 1: Add, Text, x765 y475 w220 h20 , Working folder\ProsesserteFiler.txt
 Gui, 1: font, 	; tilbake til default font
 
 Gui, 1: Add, ListView, x470 y510 w510 h330 Grid v$_Objekt_taxa, lnr|AccNo|BildeNo|Bildefilnavn|Kommentar|Motiv
@@ -157,11 +157,7 @@ Loop, %dest%\*.jpg						; Gather a list of file names from a folder and put them
 Gui, 1: Add, Button,  x1010 y812 w140 h30 gOpendest, Åpne Destination folder
 
 
-
-
 NewName := $aa  ;Bruker verdien 0 for å sjekke om man har husket å legge inn et nytt navn, se slutten av programmet
-
-
 
 ;===============================================================================
 ;Settings for programmet
@@ -210,12 +206,8 @@ Gui, 1: Add, Button, gSavePref x650 y500 w100 h50 , Save Settings
 ;===============================================================================
 Gui, 1: tab, About
 Gui, 1: font, s12 Bold, Arial
-
 Gui, 1: Add, Link, x70 y60 w700 h60 , Dette programmet er lagd for å enkelt omdøpe bildefiler som er tatt av samlingsobjekter. Programmets hjemmeside finner du <a href="https://github.com/Rindiser/objectPhotot">her</a>.
-
 Gui, 1: Add, Link,, Finner du bugs, har ønsker om ny funksjonalitet eller liknende, register en  <a href="https://github.com/Rindiser/objectPhotot/issues">Issue på Github</a>
-
-
 Gui, 1: Add, Link,, `n`n Eirik Rindal 2014-2025, lisens: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0</a> 
 ;----------
 
@@ -229,13 +221,13 @@ return
 ;set tabStops 
 RadioTab:
 	Gui, Submit, NoHide
-		; Determine which radio button is selected by checking each variable
-		if (RadioVar1)
-			tabStop := "NewName"
-		else if (RadioVar2)
-			tabStop := "bildeKommentar"
-		else if (RadioVar3)
-			tabStop := "motiv"
+	; Determine which radio button is selected by checking each variable
+	if (RadioVar1)
+		tabStop := "NewName"
+	else if (RadioVar2)
+		tabStop := "bildeKommentar"
+	else if (RadioVar3)
+		tabStop := "motiv"
 Return
 
 ; set empty or keep Comments
@@ -380,10 +372,9 @@ fixFotograf(fotografValg) {
 
 
 List_taxa_objects:
-
 	Gui, 1: ListView, $_Objekt_taxa		; denne lista heter $_Taxa_Objekter
 	LV_Delete()
-	Loop, read, %dest%\TaxonName_Object_list.txt
+	Loop, read, %dest%\ProsesserteFiler.txt
 	{
 		if (A_Index = 1)
 		{
@@ -404,8 +395,6 @@ List_taxa_objects:
 Return
 
 
-
-
 ;===========================================================================================
 ; Her sjekker programmet om det finnes 1 eller flere jpg filer og hvis det bare er 1 så vises denne
 ;===========================================================================================
@@ -420,15 +409,15 @@ Vis_bilde:
 	GuiControl, 1:, Pic, *w400 *h-1 %A_ScriptDir%\vent.jpg            ; Viser Vent bildet
 	GuiControl, 1: Show, Pic
 
-;===========================================================================================
-;Vis Please wait bar
-;===========================================================================================
+	;===========================================================================================
+	;Vis Please wait bar
+	;===========================================================================================
 
 	Gui, 3: +AlwaysOnTop
 	Gui, 3: Show,  x%$xpos% y%$ypos%, Please wait...
 	SetTimer Scroll, 10
 
-; Sjekk om fila er fredig skrevet
+	; Sjekk om fila er fredig skrevet
 	FileGetSize, BildeFilSize, %mappe%\*.jpg, K
 	Sleep, 1000
 	FileGetSize, NyBildeFilSize, *.jpg, K
@@ -437,10 +426,10 @@ Vis_bilde:
 	}						
 							
 
-; først oppdater listview
+	; først oppdater listview
 	Gosub, Refresh
 		
-; Så sjekk om det finnes 1 jpg fil 
+	; Så sjekk om det finnes 1 jpg fil 
 		
 	loop, %mappe%\*.jpg
 	{ 
@@ -491,11 +480,10 @@ Cleanup() {
 }
 
 EndOfLoop:
-GuiControl, Focus, %tabStop%
+ 	GuiControl, Focus, %tabStop%
 return
 
 ; progressbar update
-
 Scroll:
 	GuiControl,3:, Working, +1
 Return
@@ -549,10 +537,9 @@ return
 Sammeobj_Vis_bilde:
 	$_Same_or_New := 2
 	gosub Vis_bilde
-	; NotEmptyEdits teller også opp Suffix
 	gosub , NotEmptyEdits
-	GuiControl, 1: focus , %tabStop%
 	goto RenameFiles
+	
 return
 
 ;===========================================================================
@@ -565,7 +552,6 @@ Label:
 	$_Same_or_New := 2
 	gosub Vis_bilde
 	gosub , NotEmptyEdits
-	GuiControl, 1: focus , %tabStop%
 	goto , RenameFiles
 	
 return
@@ -643,12 +629,12 @@ RenameFiles:
 		GuiControl, 1: Hide, Pic, 
 		
 		; så det ikke blir problemer med tomme linjer
-		filePath = %dest%\TaxonName_Object_list.txt
+		filePath = %dest%\ProsesserteFiler.txt
 		if FileExist(filePath) {
-			FileAppend , `n%orgAccNo%|%Suffix%|%$_Filnavn%|%bildeKommentar%|%motiv%|%$_Fotostasjon%|%fotograf%|%fotoStatus%, %dest%\TaxonName_Object_list.txt
+			FileAppend , `n%orgAccNo%|%Suffix%|%$_Filnavn%|%bildeKommentar%|%motiv%|%$_Fotostasjon%|%fotograf%|%fotoStatus%, %dest%\ProsesserteFiler.txt
 		} else {
 			; AccNo|ItemNo|BildeNo|Kommentar|Bildefilnavn|Stasjon|Fotgraf|tillat nettpublisering
-			FileAppend , AccNo|BildeNo|Bildefilnavn|Kommentar|Motiv|Stasjon|Fotograf|tillat nettpublisering`n%orgAccNo%|%Suffix%|%$_Filnavn%|%bildeKommentar%|%motiv%|%$_Fotostasjon%|%fotograf%|%fotoStatus%, %dest%\TaxonName_Object_list.txt	
+			FileAppend , AccNo|BildeNo|Bildefilnavn|Kommentar|Motiv|Stasjon|Fotograf|tillat nettpublisering`n%orgAccNo%|%Suffix%|%$_Filnavn%|%bildeKommentar%|%motiv%|%$_Fotostasjon%|%fotograf%|%fotoStatus%, %dest%\ProsesserteFiler.txt	
 		}
 		gosub , List_taxa_objects		
 		gosub , Refresh			;oppdaterer listview		
@@ -685,7 +671,7 @@ EmptyEdits:				;tøm skrivefeltene
 return
 		
 NotEmptyEdits:
-	Suffix:=Suffix+1
+	Suffix += 1
 	GuiControl, 1:, Suffix,%Suffix%
 	if !commentClean
 		GuiControl, 1:, bildeKommentar, %$null%
@@ -698,7 +684,6 @@ NotEmptyEdits:
 return
 
 ;==================================================================
-
 ;~ when you close the window, get its position and save it
 Esc::
 GuiClose:
