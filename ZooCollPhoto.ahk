@@ -611,9 +611,7 @@ RenameFiles:
 		fotoStatus := "Ja"
 	}
 
-
 	ErrorCount := ErrorLevel
-
 	if ErrorCount <> 0
 	{
 		Gui, 3: Hide
@@ -644,6 +642,7 @@ RenameFiles:
 	$_Bilde_vist := 0			; Skal brukes i Rename: for å sjekk omman har hentet et bile med Vis_Bilde: da skal den ha verdien 1
 	GuiControl, 1: focus , %tabStop%
 	GuiControl, 1: Disable, $_RenameFiles
+	Gosub, EmptyEdits
 return
 
 
