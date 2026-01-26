@@ -1,237 +1,226 @@
 #SingleInstance, Force
 
-SetWorkingDir %A_ScriptDir% ; Ensures a consistent starting directory.
+SetWorkingDir %A_ScriptDir%
 SetBatchLines, -1
 FileEncoding , UTF-8
+
 ;==================================================
-;Read the values for preference file
+; Read settings
 ;==================================================
 
-;~ read the saved positions or center if not previously saved
-IniRead, gui_position, %A_ScriptDir%\settings.ini, window position, gui_position, Center
+IniRead, guiPosition, %A_ScriptDir%\settings.ini, window position, gui_position, Center
 
-;~ get the window's ID so you can get its position later
-Gui, 1: +Hwndgui_id
+Gui, 1: +HwndguiId
 
-$xpos := 100
-$ypos := 100				; får å unngå feil feil hvis bilde ikke vises
+xPos := 100
+yPos := 100
+imageShown := 0
+suffix := 1
 
-$_Bilde_vist := 0			; Skal brukes i Rename: for å sjekk om man har hentet et bile med Vis_Bilde: da skal den ha verdien 1
+IniRead, prefix, %A_ScriptDir%\settings.ini, Settings, Prefix, %A_Space%
+IniRead, newPrefix, %A_ScriptDir%\settings.ini, Settings, NyPrefix, %A_Space%
+IniRead, suffix, %A_ScriptDir%\settings.ini, Settings, Suffix, 1
+IniRead, workingFolder, %A_ScriptDir%\settings.ini, Settings, WorkingFolder, %A_ScriptDir%
+IniRead, destinationFolder, %A_ScriptDir%\settings.ini, Settings, DestinationFolder, %A_ScriptDir%
+IniRead, exportFolder, %A_ScriptDir%\settings.ini, Settings, ExportFolder, %A_Space%
+IniRead, stationNumber, %A_ScriptDir%\settings.ini, Settings, Station, %A_Space%
+IniRead, fileType, %A_ScriptDir%\settings.ini, Settings, FileType, jpg
 
-Suff := 1
+fileExt := fileType
 
-IniRead, Prefix, %A_ScriptDir%\settings.ini, Settings, Prefix, %A_Space%
-IniRead, NyPrefix, %A_ScriptDir%\settings.ini, Settings, NyPrefix, %A_Space%
-; Suffix is handled by variable Suff below
-IniRead, Suff, %A_ScriptDir%\settings.ini, Settings, Suffix, 1
-IniRead, mappe, %A_ScriptDir%\settings.ini, Settings, WorkingFolder, %A_ScriptDir%
-IniRead, dest, %A_ScriptDir%\settings.ini, Settings, DestinationFolder, %A_ScriptDir%
-IniRead, $_Export_dest, %A_ScriptDir%\settings.ini, Settings, ExportFolder, %A_Space%
-IniRead, $_Fotostasjon, %A_ScriptDir%\settings.ini, Settings, Station, %A_Space%
-IniRead, $filetype, %A_ScriptDir%\settings.ini, Settings, FileType, jpg
-
-$fileExt := $filetype
-
-SetWorkingDir %mappe%                               														 ; Ensures a consistent starting directory.
+SetWorkingDir %workingFolder%
 
 Gui, 1:  Add, Tab2,h857 w1167, Program||Settings
 Gui, 1:  tab, Program
 
-Gui,  1: Add, Progress, x20 y60 w120 h210 Backgroundc8b4a7 Disabled ; for å gi farge rundt knappene
-Gui, 1:  Add, Button, x30 y65 w100 h50 gNytt_Vis_bilde v$VisBilde Default , &Hent bilde `nNytt objekt
-Gui, 1:  Add, Button, x30 y135 w100 h50 gSammeobj_Vis_bilde v$VisBilde_sammeobj +Disabled, Hent bilde `n&Samme objekt
-Gui, 1: Add, Button, x30 y205 w100 h50 gLabel v$_LabelKnapp +Disabled, Hent bilde `nLabel
+Gui, 1: Add, Progress, x20 y60 w120 h210 Backgroundc8b4a7 Disabled
+Gui, 1: Add, Button, x30 y65 w100 h50 gNytt_Vis_bilde vBtnGetImage Default, &Get Image `nNew Object
+Gui, 1: Add, Button, x30 y135 w100 h50 gSammeobj_Vis_bilde vBtnSameObject +Disabled, Get Image `n&Same Object
+Gui, 1: Add, Button, x30 y205 w100 h50 gLabel vBtnLabel +Disabled, Get Image `nLabel
 
-Gui, 1: Add, Text, x232 y60 w90 h20 , Filnavn
-Gui, 1: Add, Edit, r1 x232 y90 w90 h30 VOldName +disabled,
-Gui, 1: Add, Text, x342 y60 w120 h20 , MUSIT nr.:
+Gui, 1: Add, Text, x232 y60 w90 h20, Filename
+Gui, 1: Add, Edit, r1 x232 y90 w90 h30 vOldName +disabled,
+Gui, 1: Add, Text, x342 y60 w120 h20, Catalog No.:
 Gui, 1: Add, Edit, r1 x342 y90 w120 h30 vNewName limit20,
-Gui, 1: Add, Text, x475 y60 w80 h30 , Bilde nr.
-Gui, 1: Add, Edit, r1 x475 y90 w40 h30 vSuffix , %Suff%
+Gui, 1: Add, Text, x475 y60 w80 h30, Image No.
+Gui, 1: Add, Edit, r1 x475 y90 w40 h30 vSuffix, %suffix%
 
 Gui, 1: font, s13 cRed w700, Arial
-Gui, 1: Add, Text, x232 y130 w90 h30 , QR-kode (UUID)
-Gui, 1: Add, Edit, r1 x232 y150 w300 h30 v$_Taxon hwndTaN, %$_Taxon%
-Gui, 1: font, 			; tilbake til default font
+Gui, 1: Add, Text, x232 y130 w90 h30, QR-code (UUID)
+Gui, 1: Add, Edit, r1 x232 y150 w300 h30 vTaxonUUID hwndHwndTaxon, %taxonUUID%
+Gui, 1: font
 
-Gui, 1: Add, Text, x232 y200 w90 h20 , Kommentar
-Gui, 1: Add, Edit, r2 x232 y220 w400 h20 v$_Kommentar,
+Gui, 1: Add, Text, x232 y200 w90 h20, Comment
+Gui, 1: Add, Edit, r2 x232 y220 w400 h20 vComment,
 
-Gui,  1: Add, Progress, x550 y65 w120 h60 Backgroundc8b4a7 Disabled ; for å gi farge rundt knappen
-Gui, 1: Add, Button, x560 y70 w100 h50 gRenameFiles v$_RenameFiles +Disabled, Gi nytt navn!
+Gui, 1: Add, Progress, x550 y65 w120 h60 Backgroundc8b4a7 Disabled
+Gui, 1: Add, Button, x560 y70 w100 h50 gRenameFiles vBtnRename +Disabled, Rename!
 
-Gui, Add, CheckBox, x560 y150 w100 h30 vbox , Validering av Musit nummer
+Gui, Add, CheckBox, x560 y150 w100 h30 vbox, Validate Catalog Number
+
 ;===============================================================================
-;Listview over objekter og navn
+; ListView objects
 ;===============================================================================
 
-Gui, 1: Add, ListView, x500 y350 w490 h490 Grid v$_Objekt_taxa, nummerliste|Musit nr|Bilde nr.|UUID|Kommentar
+Gui, 1: Add, ListView, x500 y350 w490 h490 Grid vObjectList, No.|Catalog No.|Img No.|UUID|Comment
 gosub List_taxa_objects
 
-gui, 1: Add, Button, x500 y300 w120 h40 gList_taxa_objects, Oppdater DataListe
+Gui, 1: Add, Button, x500 y300 w120 h40 gList_taxa_objects, Update Data List
 
 ;===============================================================================
 
-Gui, 1: Add, Picture, x40 y400 vPic ,
+Gui, 1: Add, Picture, x40 y400 vPicControl,
 
 ;===============================================================================
-;ListView over filene i arbeidsmappa og destinasjonsmappa
+; File ListViews
 ;===============================================================================
-Gui, 1: Add, GroupBox, x1000 y335 w160 h520 , Bildefoldere
+Gui, 1: Add, GroupBox, x1000 y335 w160 h520, Image Folders
 
-Gui, 1: Add, Button, x1040 y360 w100 h30 gRefresh, Oppdater filliste
+Gui, 1: Add, Button, x1040 y360 w100 h30 gRefresh, Update File List
 
-Gui, 1: Add, ListView, x1030 y400 w120 h240 v$destview, Filer destination folder
-Loop, %dest%\*.%$fileExt%						; Gather a list of file names from a folder and put them into the ListView:
+Gui, 1: Add, ListView, x1030 y400 w120 h240 vDestView, Destination Files
+Loop, %destinationFolder%\*.%fileExt%
 	LV_Add("", A_LoopFileName)
 
-Gui, 1: Add, Button,  x1040 y650 w100 h30 gOpendest, Åpne Destination folder
+Gui, 1: Add, Button,  x1040 y650 w100 h30 gOpendest, Open Dest. Folder
 
-Gui, 1: Add, ListView, x1030 y700 w120 h100  v$worklist , Filer Working folder
-Loop, %mappe%\*.%$fileExt%						; Gather a list of file names from a folder and put them into the ListView:
+Gui, 1: Add, ListView, x1030 y700 w120 h100 vWorkList, Working Files
+Loop, %workingFolder%\*.%fileExt%
 	LV_Add("", A_LoopFileName)
 
-Gui, 1: Add, Button, x1040 y820 w100 h30 gOpenwork, Åpne Working folder
+Gui, 1: Add, Button, x1040 y820 w100 h30 gOpenwork, Open Work Folder
 
-NewName := $aa  ;Bruker verdien 0 for å sjekke om man har husket å legge inn et nytt navn, se slutten av programmet
+newName := ""
 
 ;===============================================================================
-;Motivation part
+; Motivation part
 ;===============================================================================
 
-Gui, 1: Add, GroupBox, x900 y50 w220 h240 , Antall bilder
+Gui, 1: Add, GroupBox, x900 y50 w220 h240, Image Count
 
-Gui, 1: Add, Text, x930 y90 w40 h30 , Totalt
-Gui, 1: Add, Edit, Right r1 x930 y120 w40 h30 v$tot +disabled,
-Gui, 1: Add, Text, x990 y90 w40 h30 , I går
-Gui, 1: Add, Edit, Right r1 x990 y120 w40 h30 v$Gaar +disabled,
-Gui, 1: Add, Text, x1050 y90 w40 h30 , I dag
-Gui, 1: Add, Edit, Right r1 x1050 y120 w40 h30 v$Dags +disabled,
-Gui, 1: Add, Progress, Vertical  vMyProgressGaard x1000 y160 w30 h110 ,
-Gui, 1: Add, Progress, Vertical vMyProgressDags x1060 y160 w30 h110 ,
+Gui, 1: Add, Text, x930 y90 w40 h30, Total
+Gui, 1: Add, Edit, Right r1 x930 y120 w40 h30 vTotalCount +disabled,
+Gui, 1: Add, Text, x990 y90 w40 h30, Yesterday
+Gui, 1: Add, Edit, Right r1 x990 y120 w40 h30 vYesterdayCount +disabled,
+Gui, 1: Add, Text, x1050 y90 w40 h30, Today
+Gui, 1: Add, Edit, Right r1 x1050 y120 w40 h30 vTodayCount +disabled,
+Gui, 1: Add, Progress, Vertical vProgressYesterday x1000 y160 w30 h110,
+Gui, 1: Add, Progress, Vertical vProgressToday x1060 y160 w30 h110,
 
 ;=============================================================
-;Dagens dato
+; Date Logic
 ;=============================================================
-FormatTime, $dagensdato, ,MMdd
-$Yesterday = %a_now%
-$Yesterday += -1, days
-FormatTime, $Yesterday, %$Yesterday%, MMdd
+FormatTime, todaysDate, ,MMdd
+yesterdayDate = %a_now%
+yesterdayDate += -1, days
+FormatTime, yesterdayDate, %yesterdayDate%, MMdd
 ;=============================================================
 
-IniRead, $ddato, %A_ScriptDir%\settings.ini, Motivation, Date, %A_Space%
-IniRead, $dantall, %A_ScriptDir%\settings.ini, Motivation, DailyCount, 0
-IniRead, $Yday, %A_ScriptDir%\settings.ini, Motivation, YesterdayDate, %A_Space%
-IniRead, $gantall, %A_ScriptDir%\settings.ini, Motivation, YesterdayCount, 0
-IniRead, $totantall, %A_ScriptDir%\settings.ini, Motivation, TotalCount, 0
+IniRead, storedDate, %A_ScriptDir%\settings.ini, Motivation, Date, %A_Space%
+IniRead, storedDailyCount, %A_ScriptDir%\settings.ini, Motivation, DailyCount, 0
+IniRead, storedYesterdayDate, %A_ScriptDir%\settings.ini, Motivation, YesterdayDate, %A_Space%
+IniRead, storedYesterdayCount, %A_ScriptDir%\settings.ini, Motivation, YesterdayCount, 0
+IniRead, storedTotalCount, %A_ScriptDir%\settings.ini, Motivation, TotalCount, 0
 
-if ($ddato = $Yesterday)  ; Sjekk om gårsdagensdato (i virkeligheten) er det samme som det som er skrevet som dagensdato i fila
+if (storedDate = yesterdayDate)
 {
-	gosub , UpdateFromYesterday
+	gosub, UpdateFromYesterday
 }
-IF ( $dagensdato != $ddato)
+IF (todaysDate != storedDate)
 {
-	gosub , UpdateFromEarlier
+	gosub, UpdateFromEarlier
 }
 
 gosub, UpdateMotivation
 
 ;===============================================================================
-;Settings for programmet
+; Settings
 ;===============================================================================
 Gui, 1: tab, Settings
 
-Gui, 1: Add, Text, x72 y60 w80 h30 , Vis filer med følgende prefiks
-Gui, 1: Add, Edit, r1 x172 y60 w80 h30 vPrefix, %Prefix%
-Gui, 1: Add, Text, x272 y60 w80 h30 , Prefiks på de nye fil navnene
-Gui, 1: Add, Edit, r1 x372 y60 w80 h30 vNyPrefix, %NyPrefix%
-Gui, 1: Add, Text, x500 y60 w80 h30 , Suffix
-Gui, 1: Add, Edit, r1 x542 y60 w80 h30 vSuff, %Suff%
+Gui, 1: Add, Text, x72 y60 w80 h30, Show files with prefix
+Gui, 1: Add, Edit, r1 x172 y60 w80 h30 vPrefix, %prefix%
+Gui, 1: Add, Text, x272 y60 w80 h30, New filename prefix
+Gui, 1: Add, Edit, r1 x372 y60 w80 h30 vNewPrefix, %newPrefix%
+Gui, 1: Add, Text, x500 y60 w80 h30, Suffix
+Gui, 1: Add, Edit, r1 x542 y60 w80 h30 vSuffix, %suffix%
 
-Gui, 1: Add, Text, x72 y120 w150 h30 , Set Stasjonsnr
-Gui, 1: Add, Edit, r1 x170 y120 w50 h30 v$_Fotostasjon , %$_Fotostasjon%
+Gui, 1: Add, Text, x72 y120 w150 h30, Set Station No
+Gui, 1: Add, Edit, r1 x170 y120 w50 h30 vStationNumber, %stationNumber%
 
-Gui, 1: Add, Text, x72 y150 w80 h30 , Set working folder
-Gui, 1: Add, Edit, x172 y150 w450 h30 vmappe +disabled, %mappe%
-Gui, 1: Add, Button, gArbeidsmappe x652 y150 w80 h30 , Browse
+Gui, 1: Add, Text, x72 y150 w80 h30, Set working folder
+Gui, 1: Add, Edit, x172 y150 w450 h30 vWorkingFolder +disabled, %workingFolder%
+Gui, 1: Add, Button, gArbeidsmappe x652 y150 w80 h30, Browse
 
-Gui, 1: Add, Text, x72 y200 w80 h30 , Set destination folder
-Gui, 1: Add, Edit, x172 y200 w450 h30 vdest +disabled, %dest%
-Gui, 1: Add, Button,x652 y200 w80 h30 gDestmappe, Browse
+Gui, 1: Add, Text, x72 y200 w80 h30, Set destination folder
+Gui, 1: Add, Edit, x172 y200 w450 h30 vDestinationFolder +disabled, %destinationFolder%
+Gui, 1: Add, Button, gDestmappe x652 y200 w80 h30, Browse
 
-Gui, Add, GroupBox,  x62 y280 w350 h60,
-Gui, 1: Add, Text, x72 y305 w80 h30 , Set filtype
-;~ Gui, 1: Add, Edit, x172 y300 w50 h30 v$filetype +disabled, %$filetype%
-Gui, 1: Add, Radio, v$filetype x172 y300 w50 h30 , tif
-Gui, 1: Add, Radio, x222 y300 w50 h30 , jpg
-Gui, 1: Add, Radio, x272 y300 w50 h30 , pdf
+Gui, Add, GroupBox, x62 y280 w350 h60,
+Gui, 1: Add, Text, x72 y305 w80 h30, Set file type
+Gui, 1: Add, Radio, vFileType x172 y300 w50 h30, tif
+Gui, 1: Add, Radio, x222 y300 w50 h30, jpg
+Gui, 1: Add, Radio, x272 y300 w50 h30, pdf
 
-Gui, 1: Add, Button, gSavePref x172 y450 w100 h30 , Save Settings
+Gui, 1: Add, Button, gSavePref x172 y450 w100 h30, Save Settings
 
-Gui, 1: Show, %gui_position% h880 w1190, Object_photo
+Gui, 1: Show, %guiPosition% h880 w1190, Object_photo
 
-GuiControl, , %$filetype%, 1
+GuiControl, , %fileType%, 1
 
-OnMessage( 0x111, "WM_Command" )                ; Når det sendes en beskjed fra windows om at en WM_command er sendt , kjør da WM_Command for å finne ut hvilken kontroll
+OnMessage(0x111, "WM_Command")
 
-Gui, 3: Add, Progress, -Smooth vWorking 0x8 w250 h18 ; PBS_MARQUEE = 0x8
+Gui, 3: Add, Progress, -Smooth vWorking 0x8 w250 h18
 
 return
+
 ;============================================================
-;WM_Command vil oppdage når noen klikker i taxa feltet og slettet innholdet der
-;==========================================================
-
-WM_Command( wp, lp ) {
-	Global TaN
-	If ( (wp >> 16) = 0x100 && lp = TaN ) { ; EN_SETFOCUS = 0x100  Bit shift left (<<) and right (>>). hexadecimal (also base 16, or hex) 0x100 =  SS_NOTIFY
-		GuiControl,,$_Taxon
-
-}}
+; WM_Command
+;============================================================
+WM_Command(wp, lp) {
+	Global HwndTaxon
+	If ((wp >> 16) = 0x100 && lp = HwndTaxon) {
+		GuiControl,,TaxonUUID
+	}
+}
 
 ;===============================================================================
-;Motivation part GUI progress bars
+; Motivation part GUI progress bars
 ;===============================================================================
 
 UpdateFromYesterday:
+	storedYesterdayCount := storedDailyCount
+	storedDailyCount =
 
-	$gantall =
-	$gantall := $dantall
-	$dantall =
-
-	IniWrite, %$dagensdato%, %A_ScriptDir%\settings.ini, Motivation, Date
-	IniWrite, %$dantall%, %A_ScriptDir%\settings.ini, Motivation, DailyCount
-	IniWrite, %$Yesterday%, %A_ScriptDir%\settings.ini, Motivation, YesterdayDate
-	IniWrite, %$gantall%, %A_ScriptDir%\settings.ini, Motivation, YesterdayCount
-	IniWrite, %$totantall%, %A_ScriptDir%\settings.ini, Motivation, TotalCount
-
+	IniWrite, %todaysDate%, %A_ScriptDir%\settings.ini, Motivation, Date
+	IniWrite, %storedDailyCount%, %A_ScriptDir%\settings.ini, Motivation, DailyCount
+	IniWrite, %yesterdayDate%, %A_ScriptDir%\settings.ini, Motivation, YesterdayDate
+	IniWrite, %storedYesterdayCount%, %A_ScriptDir%\settings.ini, Motivation, YesterdayCount
+	IniWrite, %storedTotalCount%, %A_ScriptDir%\settings.ini, Motivation, TotalCount
 return
 
 UpdateFromEarlier:
+	storedYesterdayCount =
+	storedDailyCount =
 
-	$gantall =
-	$dantall =
-
-	IniWrite, %$dagensdato%, %A_ScriptDir%\settings.ini, Motivation, Date
-	IniWrite, %$dantall%, %A_ScriptDir%\settings.ini, Motivation, DailyCount
-	IniWrite, %$Yesterday%, %A_ScriptDir%\settings.ini, Motivation, YesterdayDate
-	IniWrite, %$gantall%, %A_ScriptDir%\settings.ini, Motivation, YesterdayCount
-	IniWrite, %$totantall%, %A_ScriptDir%\settings.ini, Motivation, TotalCount
-
+	IniWrite, %todaysDate%, %A_ScriptDir%\settings.ini, Motivation, Date
+	IniWrite, %storedDailyCount%, %A_ScriptDir%\settings.ini, Motivation, DailyCount
+	IniWrite, %yesterdayDate%, %A_ScriptDir%\settings.ini, Motivation, YesterdayDate
+	IniWrite, %storedYesterdayCount%, %A_ScriptDir%\settings.ini, Motivation, YesterdayCount
+	IniWrite, %storedTotalCount%, %A_ScriptDir%\settings.ini, Motivation, TotalCount
 return
 
 UpdateMotivation:
+	GuiControl, 1:, TotalCount, %storedTotalCount%
+	GuiControl, 1:, YesterdayCount, %storedYesterdayCount%
+	GuiControl, 1:, TodayCount, %storedDailyCount%
 
-	GuiControl, 1:, $tot, %$totantall%
-	GuiControl, 1:, $Gaar, %$gantall%
-	GuiControl, 1:, $Dags, %$dantall%
-
-	UpdateProgressBarColor("MyProgressGaard", $gantall, false)
-	UpdateProgressBarColor("MyProgressDags", $dantall, true)
+	UpdateProgressBarColor("ProgressYesterday", storedYesterdayCount, false)
+	UpdateProgressBarColor("ProgressToday", storedDailyCount, true)
 return
 
 UpdateProgressBarColor(ControlName, Count, IsToday) {
-	ControlColor := "Green" ; Default
-
+	ControlColor := "Green"
 	if (Count < 100)
 		ControlColor := "Red"
 	else if (Count < 200)
@@ -243,147 +232,116 @@ UpdateProgressBarColor(ControlName, Count, IsToday) {
 	else if (Count < 500)
 		ControlColor := "Lime"
 	else if (IsToday) {
-		; High score colors only for today
 		if (Count < 600)
 			ControlColor := "Black"
 		else if (Count < 700)
 			ControlColor := "Maroon"
 	}
-
 	GuiControl, 1: +c%ControlColor%, %ControlName%
 	GuiControl, 1:, %ControlName%, %Count%
 }
 
 ;===============================================================================
-;Open work and dest folder
+; Open work and dest folder
 ;===============================================================================
 
 Openwork:
-	Run %mappe%
-
+	Run %workingFolder%
 return
 
 Opendest:
-	Run %dest%
-
+	Run %destinationFolder%
 return
 
 Refresh:
-	Gui, 1: Listview, $worklist
+	Gui, 1: Listview, WorkList
 	LV_Delete()
-	Loop, %mappe%\*.%$fileExt%						; Gather a list of file names from a folder and put them into the ListView:
+	Loop, %workingFolder%\*.%fileExt%
 		LV_Add("", A_LoopFileName)
 
-	Gui, 1: Listview, $destview
+	Gui, 1: Listview, DestView
 	LV_Delete()
-	Listdest =
-	Loop, %dest%\*.%$fileExt%
+	listDest =
+	Loop, %destinationFolder%\*.%fileExt%
 	{
-		If A_index < 2 				; for å unngå blank linje
-		{
-			Listdest = %Listdest%%A_LoopFileTimeAccessed%|%A_LoopFileName%
-		}
+		If A_index < 2
+			listDest = %listDest%%A_LoopFileTimeAccessed%|%A_LoopFileName%
 		else
-		{
-			Listdest = %Listdest%`n%A_LoopFileTimeAccessed%|%A_LoopFileName%
-		}
+			listDest = %listDest%`n%A_LoopFileTimeAccessed%|%A_LoopFileName%
+	}
 
-	}					; Gather a list of file names from a folder and put them into the ListView:
-
-	Sort, Listdest, R ; Sort by date.
-	FileDelete , Listdest.txt
-
-	FileAppend ,  %Listdest%,  Listdest.txt
-	Loop, parse, Listdest, `n,
+	Sort, listDest, R
+	FileDelete, Listdest.txt
+	FileAppend, %listDest%, Listdest.txt
+	Loop, parse, listDest, `n,
 	{
 		StringSplit, item, A_LoopField, `|
 		LV_Add("",item2)
-
 	}
 return
 
 ;===============================================================================
-;Sett arbeidsfolder og destinasjonsfolder
+; Directories
 ;===============================================================================
 
 Arbeidsmappe:
-	FileSelectFolder, mappe , , 3, Velg mappe
-
-	mappe := RegExReplace(mappe, "\\$")  ; Removes the trailing backslash, if present.
-	if mappe =
+	FileSelectFolder, workingFolder, , 3, Select Folder
+	workingFolder := RegExReplace(workingFolder, "\\$")
+	if workingFolder =
 	{
 		SetWorkingDir %A_ScriptDir%
-		GuiControl, 1:, mappe, %A_ScriptDir%
+		GuiControl, 1:, WorkingFolder, %A_ScriptDir%
 	}
 	else
 	{
-		SetWorkingDir %mappe%
-		GuiControl, 1:, mappe, %mappe%
-
+		SetWorkingDir %workingFolder%
+		GuiControl, 1:, WorkingFolder, %workingFolder%
 	}
-
 Return
 
 Destmappe:
-	FileSelectFolder, dest , , 3, Velg mappe
-
-	dest := RegExReplace(dest, "\\$")  ; Removes the trailing backslash, if present.
-	if dest =
-	{
+	FileSelectFolder, destinationFolder, , 3, Select Folder
+	destinationFolder := RegExReplace(destinationFolder, "\\$")
+	if destinationFolder =
 		MsgBox Choose destination folder!
-	}
 	else
-	{
-		GuiControl, 1:, dest, %dest%
-	}
-
+		GuiControl, 1:, DestinationFolder, %destinationFolder%
 return
 
 ;===============================================================================
-;Save changes to settings
+; Save Settings
 ;===============================================================================
 
 SavePref:
-	; FileDelete of Preferences.txt removed as we are using settings.ini now
+	Gui 1: submit, NoHide
 
-	Gui 1:  submit, NoHide
+	if fileType = 1
+		fileType = tif
+	if fileType = 2
+		fileType = jpg
+	if fileType = 3
+		fileType = pdf
 
-	;------ Finn ut hvlike filtype vi skal ha fra radioboksene
-	if $filetype = 1
-		$filetype = tif
-	if $filetype = 2
-		$filetype = jpg
-	if $filetype = 3
-		$filetype = pdf
-
-	;======================================
-	;Write variables to file
-	;======================================
-
-	IniWrite, %Prefix%, %A_ScriptDir%\settings.ini, Settings, Prefix
-	IniWrite, %NyPrefix%, %A_ScriptDir%\settings.ini, Settings, NyPrefix
-	IniWrite, %Suff%, %A_ScriptDir%\settings.ini, Settings, Suffix
-	IniWrite, %mappe%, %A_ScriptDir%\settings.ini, Settings, WorkingFolder
-	IniWrite, %dest%, %A_ScriptDir%\settings.ini, Settings, DestinationFolder
-	IniWrite, %$_Export_dest%, %A_ScriptDir%\settings.ini, Settings, ExportFolder
-	IniWrite, %$_Fotostasjon%, %A_ScriptDir%\settings.ini, Settings, Station
-	IniWrite, %$filetype%, %A_ScriptDir%\settings.ini, Settings, FileType
+	IniWrite, %prefix%, %A_ScriptDir%\settings.ini, Settings, Prefix
+	IniWrite, %newPrefix%, %A_ScriptDir%\settings.ini, Settings, NyPrefix
+	IniWrite, %suffix%, %A_ScriptDir%\settings.ini, Settings, Suffix
+	IniWrite, %workingFolder%, %A_ScriptDir%\settings.ini, Settings, WorkingFolder
+	IniWrite, %destinationFolder%, %A_ScriptDir%\settings.ini, Settings, DestinationFolder
+	IniWrite, %exportFolder%, %A_ScriptDir%\settings.ini, Settings, ExportFolder
+	IniWrite, %stationNumber%, %A_ScriptDir%\settings.ini, Settings, Station
+	IniWrite, %fileType%, %A_ScriptDir%\settings.ini, Settings, FileType
 	Reload
-
 Return
 
 ;----------------------------------------------------
 List_taxa_objects:
-
-	Gui, 1: ListView, $_Objekt_taxa		; denne lista heter $_Taxa_Objekter
+	Gui, 1: ListView, ObjectList
 	LV_Delete()
-	Loop, read, %dest%\TaxonName_Object_list.txt
+	Loop, read, %destinationFolder%\TaxonName_Object_list.txt
 	{
 		if a_index = 1
 			continue
-
-		else
-		{
+		else {
 			StringSplit, item, A_LoopReadLine, `|
 			LV_Add("",A_index,item1,item2,item3,item4)
 		}
@@ -393,336 +351,245 @@ List_taxa_objects:
 	LV_ModifyCol(3, 50)
 	LV_ModifyCol(4, 200)
 	LV_ModifyCol(5, 300)
-
 	LV_ModifyCol(1, "Integer")
 	LV_ModifyCol(1, "SortDesc")
 	LV_ModifyCol(2, "Left")
 	LV_ModifyCol(3, "Left")
 	LV_ModifyCol(4, "left")
 	LV_ModifyCol(5, "Left")
-
 Return
 
 ;===========================================================================================
-; Her sjekker programmet om det finnes 1 eller flere jpg filer og hvis det bare er 1 så vises denne
+; View Image
 ;===========================================================================================
 
 Vis_bilde:
-
-	Number =   ;setter variabelen Number til å inneholde ingenting
-	WinGetPos , $xpos, $ypos
-	$xpos := $xpos+200
-	$ypos := $ypos+400
-	$_Bilde_vist = 0
-	GuiControl, 1:, Pic, *w400 *h-1 %A_ScriptDir%\vent.jpg            ; Viser Vent bildet
-
-	GuiControl, 1: Show, Pic
-
+	fileCount =
+	WinGetPos, xPos, yPos
+	xPos := xPos+200
+	yPos := yPos+400
+	imageShown = 0
+	GuiControl, 1:, PicControl, *w400 *h-1 %A_ScriptDir%\vent.jpg
+	GuiControl, 1: Show, PicControl
 	gosub, PleaseWait
 
-	; Sjekk om fila er fredig skrevet
-
-	; Wait for file to be ready (size stable and not locked)
-	Loop
-	{
+	Loop {
 		FoundFile := ""
-		Loop, %mappe%\*.%$fileExt%
-		{
+		Loop, %workingFolder%\*.%fileExt% {
 			FoundFile := A_LoopFileFullPath
-			break ; Assume only one file or take the first one
+			break
 		}
-
 		if (FoundFile == "") {
 			Sleep 500
 			continue
 		}
-
-		; Check for write lock by attempting to open for reading
 		f := FileOpen(FoundFile, "r")
 		if (IsObject(f)) {
 			f.Close()
-			break ; File is ready
+			break
 		}
 		Sleep 500
 	}
-	; først oppdater listview
 
 	Gosub, Refresh
 
-	; Så sjekk om det finnes 1 jpg fil
-	;
-
-	loop, %mappe%\*.%$fileExt%
-	{
-		SplitPath, A_LoopFileName, , , , OutNameNoExt, 				; ta bort .jpg exstention fra variabel, slik at bare det forand punktum blir lastet inn som variabel
-		Number := A_Index
+	loop, %workingFolder%\*.%fileExt% {
+		SplitPath, A_LoopFileName, , , , outNameNoExt
+		fileCount := A_Index
 	}
 
-	if Number < 1
-	{
-
+	if fileCount < 1 {
 		gosub, PleaseWaitOff
-		MsgBox , 262160, , Det finnes ingen bilder i mappa!
-		GuiControl, 1:, Pic, *w400 *h-1, $aa
+		MsgBox, 262160, , No images found in the folder!
+		GuiControl, 1:, PicControl, *w400 *h-1, % ""
 		Gui, 1: Show,,
 		Return
 	}
-
-	else if	Number > 1		;teller hvor mage jpg filer det er i working directory og hvis det er mer enn 1 så gir den feilmelding og åpner folderen
-	{
+	else if fileCount > 1 {
 		gosub, PleaseWaitOff
-		GuiControl, 1:, Pic, *w400 *h-1, $aa
+		GuiControl, 1:, PicControl, *w400 *h-1, % ""
 		Gui, 1: Show,,
-		MsgBox , 262160, , Du har flere enn 1 bilderfiler i "Image mappa" di, vennligst rydd opp.
-		Run %mappe%
+		MsgBox, 262160, , You have more than 1 image in your "Work folder", please clean up.
+		Run %workingFolder%
 		Return
 	}
-
-	else 								;hvis det bare et jpg bilde i mappa
-	{
-		GuiControl, 1:, Pic, *w400 *h-1 %A_ScriptDir%\go.jpg            ; Viser Vent bildet
-		GuiControl, 1:, OldName,  %OutNameNoExt%
-		GuiControl, 1: Show, Pic
+	else {
+		GuiControl, 1:, PicControl, *w400 *h-1 %A_ScriptDir%\go.jpg
+		GuiControl, 1:, OldName, %outNameNoExt%
+		GuiControl, 1: Show, PicControl
 		gosub, PleaseWaitOff
-		$_Bilde_vist = 1
-		GuiControl , 1: enable, $_RenameFiles
-		GuiControl , 1: enable, $_LabelKnapp
-		GuiControl , 1: enable, $VisBilde_sammeobj
-		GuiControl , 1: +Default, $_RenameFiles
-		GuiControl, Focus, $_Taxon
-
+		imageShown = 1
+		GuiControl, 1: enable, BtnRename
+		GuiControl, 1: enable, BtnLabel
+		GuiControl, 1: enable, BtnSameObject
+		GuiControl, 1: +Default, BtnRename
+		GuiControl, Focus, TaxonUUID
 	}
-
 Return
 
-;
 ;==========================================================================
-;Strekkodeleseren sender et enter, her fanges det opp
-;===========================================================================
+; Barcode Enter Catch
+;==========================================================================
 
-#IfWinActive , Object_photo
+#IfWinActive, Object_photo
 	Enter::
-		$StrekFelt =
-		GuiControlGet, $StrekFelt, FocusV			;finner ut fokus og lagrer det til variablen $Strekfelt
+		barcodeField =
+		GuiControlGet, barcodeField, FocusV
 
-		if $StrekFelt = $_Taxon
+		if barcodeField = TaxonUUID
 		{
-			sleep , 500
-			GuiControl , focus , NewName			; Flytter focus fra Taxonfeltet til filnavn
+			sleep, 500
+			GuiControl, focus, NewName
 		}
-
-		else if $StrekFelt = NewName
+		else if barcodeField = NewName
 		{
-			Sleep , 1000
+			Sleep, 1000
 			gosub RenameFiles
 		}
 		else
 		{
-			Send , {enter}
+			Send, {enter}
 		}
 	return
 
 	;===========================================================================================
-	;Rename filer og flytt dem
+	; Rename/Move
 	;===========================================================================================
 
 	Nytt_Vis_bilde:
-
-		$_Same_or_New = 1
-		gosub , EmptyEdits
+		sameOrNew = 1
+		gosub, EmptyEdits
 		gosub Vis_bilde
-
 	return
 
 	Sammeobj_Vis_bilde:
-
-		$_Same_or_New = 2
+		sameOrNew = 2
 		gosub Vis_bilde
 		gosub RenameFiles
-
 	return
 
-	;=========================================================================00
-	;Label sjekker om det er et etikett bilde og i såfall legger til Label i navnet på fila
-	;===========================================================================
-
 	Label:
-
-		global $_label
-		$_label = 1
-		$_Same_or_New = 2
+		global isLabel
+		isLabel = 1
+		sameOrNew = 2
 		gosub Vis_bilde
 		gosub NotEmptyEdits
 		gosub RenameFiles
-
 	return
 
 	RenameFiles:
+		Gui 1: submit, NoHide
 
-		Gui 1:  submit, NoHide
-
-		If		($_Bilde_vist <> 1)
-		{
-			MsgBox Ingen bilde er funnet. Trykk "Hent bilde"
+		If (imageShown <> 1) {
+			MsgBox No image found. Press "Get Image"
 			return
 		}
 
-		if ($_Taxon = $aa) 			; sjekk om det er skrevet inn et taxon navn
-		{
+		if (taxonUUID = "") {
 			SoundSet, 100
-			;~ SoundPlay, %A_ScriptDir%\uhoh.wav ;
-			MsgBox , 262160, , Du har glemt UUID (QR kode)!
+			MsgBox, 262160, , You have forgotten the UUID (QR code)!
 			return
 		}
 
-		if (NewName = $aa)
-		{
-			MsgBox , 262160, , Du har glemt filnavn!
+		if (newName = "") {
+			MsgBox, 262160, , You have forgotten the filename!
 			return
 		}
 
-		;===========================================================================================
-		;Trimme Strekkodenummer og splitte det
-		;===========================================================================================
-		$_deltnavn1 := NewName
-
-		;===========================================================================================
-		;Vis Please wait bar
-		;===========================================================================================
-
+		namePart1 := newName
 		gosub, pleaseWait
 
-		global	$_Filnavn
+		global finalFilename
 
-		FileSetTime , , %OutNameNoExt%.%$fileExt% , A
-		if ($_label = 1)
-		{
-			if (Suffix <> "")
-			{
-				FileMove ,%OutNameNoExt%.%$fileExt%, %dest%\%$_deltnavn1%_%$_deltnavn2%_%Suffix%_Label.%$fileExt%, 0
-				$_Filnavn = %$_deltnavn1%_%$_deltnavn2%_%Suffix%_Label.%$fileExt%
-			}
-			else
-			{
-				FileMove ,%OutNameNoExt%.%$fileExt%, %dest%\%$_deltnavn1%_%$_deltnavn2%_Label.%$fileExt%, 0
-				$_Filnavn = %$_deltnavn1%_%$_deltnavn2%_Label.%$fileExt%
-			}
-		}
+		FileSetTime, , %outNameNoExt%.%fileExt%, A
 
-		else
-		{
-			if (Suffix <> "")
-			{
-				FileMove ,%OutNameNoExt%.%$fileExt%, %dest%\%NyPrefix%%$_deltnavn1%-0%Suffix%.%$fileExt%, 0
-				$_Filnavn = %NyPrefix%%$_deltnavn1%-0%Suffix%.%$fileExt%
+		if (isLabel = 1) {
+			if (suffix <> "") {
+				FileMove, %outNameNoExt%.%fileExt%, %destinationFolder%\%namePart1%_%namePart2%_%suffix%_Label.%fileExt%, 0
+				finalFilename = %namePart1%_%namePart2%_%suffix%_Label.%fileExt%
+			} else {
+				FileMove, %outNameNoExt%.%fileExt%, %destinationFolder%\%namePart1%_%namePart2%_Label.%fileExt%, 0
+				finalFilename = %namePart1%_%namePart2%_Label.%fileExt%
 			}
-			else
-			{
-
-				FileMove ,%OutNameNoExt%.%$fileExt%, %dest%\%$_deltnavn1%_%$_deltnavn2%.%$fileExt%, 0
-				$_Filnavn = %$_deltnavn1%_%$_deltnavn2%.%$fileExt%
+		} else {
+			if (suffix <> "") {
+				FileMove, %outNameNoExt%.%fileExt%, %destinationFolder%\%newPrefix%%namePart1%-0%suffix%.%fileExt%, 0
+				finalFilename = %newPrefix%%namePart1%-0%suffix%.%fileExt%
+			} else {
+				FileMove, %outNameNoExt%.%fileExt%, %destinationFolder%\%namePart1%_%namePart2%.%fileExt%, 0
+				finalFilename = %namePart1%_%namePart2%.%fileExt%
 			}
 		}
 
-		ErrorCount := ErrorLevel
+		errorCount := ErrorLevel
 
-		if ErrorCount <> 0
-		{
+		if errorCount <> 0 {
 			gosub PleaseWaitOff
-			MsgBox , 262160, ,  %ErrorCount% files/folders could not be moved and renamed
-			NewName := ""
-			GuiControl, 1:, NewName,  %NewName%
+			MsgBox, 262160, , %errorCount% files/folders could not be moved and renamed
+			newName := ""
+			GuiControl, 1:, NewName, %newName%
 			Gui, 1: Show,,
 			Return
-		}
-		else
-		{
-			gosub , UpDateMotivationCount				;Oppdaterer motivasjonsdelen
+		} else {
+			gosub, UpDateMotivationCount
+			GuiControl, 1: Hide, PicControl
 
-			GuiControl, 1: Hide, Pic,
-
-			IfExist %dest%\TaxonName_Object_list.txt			; så det ikke blir problemer med tomme linjer
+			IfExist %destinationFolder%\TaxonName_Object_list.txt
 			{
-				FileAppend , `n%$_deltnavn1%|%Suffix%|%$_Taxon%|%$_Kommentar%|%$_Filnavn%|%$_Fotostasjon%, %dest%\TaxonName_Object_list.txt
-			}
-			else
-			{
-				; AccNo|ItemNo|BildeNo|Skuff|Kommentar|Bildefilnavn|Stasjon
-				FileAppend , MUSIT nummer|BildeNo|UUID|Kommentar|Bildefilnavn|Stasjon`n%$_deltnavn1%|%Suffix%|%$_Taxon%|%$_Kommentar%|%$_Filnavn%|%$_Fotostasjon%, %dest%\TaxonName_Object_list.txt
+				FileAppend, `n%namePart1%|%suffix%|%taxonUUID%|%comment%|%finalFilename%|%stationNumber%, %destinationFolder%\TaxonName_Object_list.txt
+			} else {
+				FileAppend, MUSIT nummer|BildeNo|UUID|Kommentar|Bildefilnavn|Stasjon`n%namePart1%|%suffix%|%taxonUUID%|%comment%|%finalFilename%|%stationNumber%, %destinationFolder%\TaxonName_Object_list.txt
 			}
 
-			gosub , UpdateMotivation
-			gosub , List_taxa_objects
-			gosub , Refresh			;oppdaterer listview
+			gosub, UpdateMotivation
+			gosub, List_taxa_objects
+			gosub, Refresh
 			gosub PleaseWaitOff
 		}
-		$_label = 0
-		$_Bilde_vist = 0			; Skal brukes i Rename: for å sjekk omman har hentet et bile med Vis_Bilde: da skal den ha verdien 1
-		GuiControl, 1: focus , NewName
-		GuiControl, 1: Disable, $_RenameFiles
-
+		isLabel = 0
+		imageShown = 0
+		GuiControl, 1: focus, NewName
+		GuiControl, 1: Disable, BtnRename
 	return
 
-	EmptyEdits:				;tøm skrivefeltene
-		$null :=
-		GuiControl, 1:, NewName, %$null%
-		GuiControl, 1:, OldName, %$null%
-		GuiControl, 1:, $_Kommentar, %$null%
-		GuiControl, 1:, $NorskNavn, %$null%
-		GuiControl, 1:, $EngelskNavn, %$null%
+	EmptyEdits:
+		GuiControl, 1:, NewName, % ""
+		GuiControl, 1:, OldName, % ""
+		GuiControl, 1:, Comment, % ""
 		GuiControl, 1:, Suffix, 1
-		GuiControl, 1: focus , NewName
+		GuiControl, 1: focus, NewName
 		Gui, 1: Show,,
 	return
 
 	NotEmptyEdits:
-		Suffix:=Suffix+1
-		GuiControl, 1:, $_Kommentar, %$null%
-		GuiControl, 1:, Suffix,%Suffix%
-		GuiControl, 1: focus ,$VisBilde_sammeobj
+		suffix := suffix + 1
+		GuiControl, 1:, Comment, % ""
+		GuiControl, 1:, Suffix, %suffix%
+		GuiControl, 1: focus, BtnSameObject
 		Gui, 1: Show,,
 	return
 
 	UpDateMotivationCount:
-
-		;==============================================
-		; lagre antall filer tatt til motivasjonsdelen
-		;
-		;==============================================
-		if ($dantall < 1)
-		{
-			$dantall := 1
-		}
+		if (storedDailyCount < 1)
+			storedDailyCount := 1
 		else
-		{
-			$dantall ++				; teller i motivasjonsdelen
-		}
+			storedDailyCount ++
 
-		if ($totantall < 1)
-		{
-			$totantall := $dantall
-		}
-
+		if (storedTotalCount < 1)
+			storedTotalCount := storedDailyCount
 		else
-		{
-			$totantall ++			; teller i motivasjonsdelen
-		}
+			storedTotalCount ++
 
-		; No need to delete file with IniWrite
-		IniWrite, %$dagensdato%, %A_ScriptDir%\settings.ini, Motivation, Date
-		IniWrite, %$dantall%, %A_ScriptDir%\settings.ini, Motivation, DailyCount
-		IniWrite, %$Yesterday%, %A_ScriptDir%\settings.ini, Motivation, YesterdayDate
-		IniWrite, %$gantall%, %A_ScriptDir%\settings.ini, Motivation, YesterdayCount
-		IniWrite, %$totantall%, %A_ScriptDir%\settings.ini, Motivation, TotalCount
-	;========================================================
+		IniWrite, %todaysDate%, %A_ScriptDir%\settings.ini, Motivation, Date
+		IniWrite, %storedDailyCount%, %A_ScriptDir%\settings.ini, Motivation, DailyCount
+		IniWrite, %yesterdayDate%, %A_ScriptDir%\settings.ini, Motivation, YesterdayDate
+		IniWrite, %storedYesterdayCount%, %A_ScriptDir%\settings.ini, Motivation, YesterdayCount
+		IniWrite, %storedTotalCount%, %A_ScriptDir%\settings.ini, Motivation, TotalCount
 	return
 
-	;===========================================================================================
-	;Vis Please wait bar
-	;===========================================================================================
 	PleaseWait:
-		Gui, 3: Show,  , Please wait...
-		SetTimer Scroll, 1 , 100
+		Gui, 3: Show, , Please wait...
+		SetTimer Scroll, 1, 100
 		Sleep 200
 	return
 
@@ -735,22 +602,13 @@ Return
 		GuiControl, 3:, Working, +3
 	Return
 
-	;==================================================================
-
-	;~ when you close the window, get its position and save it
 	Esc::
 	GuiClose:
-		WinGetPos, gui_x, gui_y,,, ahk_id %gui_id%
-
-		; if window position is outside the screen it centeres it
-		if (gui_x>-800)
-		{
-			IniWrite, x%gui_x% y%gui_y%, %A_ScriptDir%\settings.ini, window position, gui_position
+		WinGetPos, guiX, guiY,,, ahk_id %guiId%
+		if (guiX > -800) {
+			IniWrite, x%guiX% y%guiY%, %A_ScriptDir%\settings.ini, window position, gui_position
 			ExitApp
-		}
-		else
-		{
+		} else {
 			IniWrite, x100 y100, %A_ScriptDir%\settings.ini, window position, gui_position
 			ExitApp
 		}
-
