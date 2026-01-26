@@ -119,11 +119,11 @@ $Yesterday += -1, days
 FormatTime, $Yesterday, %$Yesterday%, MMdd
 ;=============================================================
 
-FileReadLine, $ddato, %A_ScriptDir%\Motivation_dag.txt, LineNum 1                                           	 ; dagensdato
-FileReadLine, $dantall,%A_ScriptDir%\Motivation_dag.txt, LineNum 2                              		     	 ; antall bilder tatt i dag
-FileReadLine,  $Yday, %A_ScriptDir%\Motivation_dag.txt, LineNum 3                                     		    	; gårsdagensdato
-FileReadLine, $gantall, %A_ScriptDir%\Motivation_dag.txt, LineNum 4                                           	 ; antall bilder tatt i går
-FileReadLine, $totantall, %A_ScriptDir%\Motivation_dag.txt, LineNum 5                                           	 ; antall bilder tatt totalt
+IniRead, $ddato, %A_ScriptDir%\settings.ini, Motivation, Date, %A_Space%
+IniRead, $dantall, %A_ScriptDir%\settings.ini, Motivation, DailyCount, 0
+IniRead, $Yday, %A_ScriptDir%\settings.ini, Motivation, YesterdayDate, %A_Space%
+IniRead, $gantall, %A_ScriptDir%\settings.ini, Motivation, YesterdayCount, 0
+IniRead, $totantall, %A_ScriptDir%\settings.ini, Motivation, TotalCount, 0
 
 if ($ddato = $Yesterday)  ; Sjekk om gårsdagensdato (i virkeligheten) er det samme som det som er skrevet som dagensdato i fila
 {
@@ -198,12 +198,11 @@ UpdateFromYesterday:
 	$gantall := $dantall
 	$dantall =
 
-	FileDelete, %A_ScriptDir%\Motivation_dag.txt
-	FileAppend, %$dagensdato%`n, %A_ScriptDir%\Motivation_dag.txt,                                         	 	; dagensdato
-	FileAppend, %$dantall%`n, %A_ScriptDir%\Motivation_dag.txt,                                       	 		; antall bilder tatt i dag
-	FileAppend, %$Yesterday%`n, %A_ScriptDir%\Motivation_dag.txt,                                         	 	; dagensdato
-	FileAppend, %$gantall%`n, %A_ScriptDir%\Motivation_dag.txt,                                       	 		; antall bilder tatt i dag
-	FileAppend, %$totantall%`n, %A_ScriptDir%\Motivation_dag.txt,                                       	 		; antall bilder tatt i dag
+	IniWrite, %$dagensdato%, %A_ScriptDir%\settings.ini, Motivation, Date
+	IniWrite, %$dantall%, %A_ScriptDir%\settings.ini, Motivation, DailyCount
+	IniWrite, %$Yesterday%, %A_ScriptDir%\settings.ini, Motivation, YesterdayDate
+	IniWrite, %$gantall%, %A_ScriptDir%\settings.ini, Motivation, YesterdayCount
+	IniWrite, %$totantall%, %A_ScriptDir%\settings.ini, Motivation, TotalCount
 
 return
 
@@ -212,12 +211,11 @@ UpdateFromEarlier:
 	$gantall =
 	$dantall =
 
-	FileDelete, %A_ScriptDir%\Motivation_dag.txt
-	FileAppend, %$dagensdato%`n, %A_ScriptDir%\Motivation_dag.txt,                                         	 ; dagensdato
-	FileAppend, %$dantall%`n, %A_ScriptDir%\Motivation_dag.txt,                                       		 ; antall bilder tatt i dag
-	FileAppend, %$Yesterday%`n, %A_ScriptDir%\Motivation_dag.txt,                                         	 ; dagensdato
-	FileAppend, %$gantall%`n, %A_ScriptDir%\Motivation_dag.txt,                                       		 ; antall bilder tatt i dag
-	FileAppend, %$totantall%`n, %A_ScriptDir%\Motivation_dag.txt,                                       		 ; antall bilder tatt i dag
+	IniWrite, %$dagensdato%, %A_ScriptDir%\settings.ini, Motivation, Date
+	IniWrite, %$dantall%, %A_ScriptDir%\settings.ini, Motivation, DailyCount
+	IniWrite, %$Yesterday%, %A_ScriptDir%\settings.ini, Motivation, YesterdayDate
+	IniWrite, %$gantall%, %A_ScriptDir%\settings.ini, Motivation, YesterdayCount
+	IniWrite, %$totantall%, %A_ScriptDir%\settings.ini, Motivation, TotalCount
 
 return
 
@@ -226,82 +224,35 @@ UpdateMotivation:
 	GuiControl, 1:, $tot, %$totantall%
 	GuiControl, 1:, $Gaar, %$gantall%
 	GuiControl, 1:, $Dags, %$dantall%
-	;=============================================================
-	;Status bar
-	;=============================================================
 
-	if $gantall < 100
-	{
-		GuiControl, 1: +cRed, MyProgressGaard,
-		GuiControl, 1:, MyProgressGaard, %$gantall%
-	}
-	else if $gantall < 200
-	{
-		GuiControl, 1:+cBlue, MyProgressGaard,
-		GuiControl, 1:, MyProgressGaard, %$gantall%
-	}
-	else if $gantall < 300
-	{
-		GuiControl, 1:+cYellow, MyProgressGaard,
-		GuiControl, 1:, MyProgressGaard, %$gantall%
-	}
-	else if $gantall < 400
-	{
-		GuiControl, 1:+cSilver, MyProgressGaard,
-		GuiControl, 1:, MyProgressGaard, %$gantall%
-	}
-	else if $gantall < 500
-	{
-		GuiControl, 1:+cLime, MyProgressGaard,
-		GuiControl, 1:, MyProgressGaard, %$gantall%
-	}
-	else
-	{
-		GuiControl, 1:+cGreen, MyProgressGaard,
-		GuiControl, 1:, MyProgressGaard, %$gantall%
-	}
-	;---- Dagens søyle
-	if $dantall < 100
-	{
-		GuiControl, 1: +cRed, MyProgressDags,
-		GuiControl, 1:, MyProgressDags, %$dantall%
-	}
-	else if $dantall < 200
-	{
-		GuiControl, 1:+cBlue, MyProgressDags,
-		GuiControl, 1:, MyProgressDags, %$dantall%
-	}
-	else if $dantall < 300
-	{
-		GuiControl, 1:+cYellow, MyProgressDags,
-		GuiControl, 1:, MyProgressDags, %$dantall%
-	}
-	else if $dantall < 400
-	{
-		GuiControl, 1:+cSilver, MyProgressDags,
-		GuiControl, 1:, MyProgressDags, %$dantall%
-	}
-	else if $dantall < 500
-	{
-		GuiControl, 1:+cLime, MyProgressDags,
-		GuiControl, 1:, MyProgressDags, %$dantall%
-	}
-	else if $dantall < 600
-	{
-		GuiControl, 1:+cBlack, MyProgressDags,
-		GuiControl, 1:, MyProgressDags, %$dantall%
-	}
-	else if $dantall < 700
-	{
-		GuiControl, 1:+cMaroon, MyProgressDags,
-		GuiControl, 1:, MyProgressDags, %$dantall%
-	}
-	else
-	{
-		GuiControl, 1:+cGreen, MyProgressDags,
-		GuiControl, 1:, MyProgressDags, %$dantall%
-	}
+	UpdateProgressBarColor("MyProgressGaard", $gantall, false)
+	UpdateProgressBarColor("MyProgressDags", $dantall, true)
 return
+
+UpdateProgressBarColor(ControlName, Count, IsToday) {
+	ControlColor := "Green" ; Default
+
+	if (Count < 100)
+		ControlColor := "Red"
+	else if (Count < 200)
+		ControlColor := "Blue"
+	else if (Count < 300)
+		ControlColor := "Yellow"
+	else if (Count < 400)
+		ControlColor := "Silver"
+	else if (Count < 500)
+		ControlColor := "Lime"
+	else if (IsToday) {
+		; High score colors only for today
+		if (Count < 600)
+			ControlColor := "Black"
+		else if (Count < 700)
+			ControlColor := "Maroon"
+	}
+
+	GuiControl, 1: +c%ControlColor%, %ControlName%
+	GuiControl, 1:, %ControlName%, %Count%
+}
 
 ;===============================================================================
 ;Open work and dest folder
@@ -757,13 +708,12 @@ Return
 			$totantall ++			; teller i motivasjonsdelen
 		}
 
-		FileDelete, %A_ScriptDir%\Motivation_dag.txt
-
-		FileAppend, %$dagensdato%`n,%A_ScriptDir%\Motivation_dag.txt,                                         	 ; dagensdato
-		FileAppend, %$dantall%`n, %A_ScriptDir%\Motivation_dag.txt,                                       	 ; antall bilder tatt i dag
-		FileAppend, %$Yesterday%`n, %A_ScriptDir%\Motivation_dag.txt,                                         	 ; dagensdato
-		FileAppend, %$gantall%`n,%A_ScriptDir%\Motivation_dag.txt,                                       	 ; antall bilder tatt i dag
-		FileAppend, %$totantall%`n,%A_ScriptDir%\Motivation_dag.txt,                                       	 ; antall bilder tatt i dag
+		; No need to delete file with IniWrite
+		IniWrite, %$dagensdato%, %A_ScriptDir%\settings.ini, Motivation, Date
+		IniWrite, %$dantall%, %A_ScriptDir%\settings.ini, Motivation, DailyCount
+		IniWrite, %$Yesterday%, %A_ScriptDir%\settings.ini, Motivation, YesterdayDate
+		IniWrite, %$gantall%, %A_ScriptDir%\settings.ini, Motivation, YesterdayCount
+		IniWrite, %$totantall%, %A_ScriptDir%\settings.ini, Motivation, TotalCount
 	;========================================================
 	return
 
