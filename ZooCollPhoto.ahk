@@ -111,7 +111,7 @@ Gui, 1: font, Italic, Arial
 Gui, 1: Add, Text, x765 y475 w220 h20 , Working folder\ProsesserteFiler.txt
 Gui, 1: font, 	; tilbake til default font
 
-Gui, 1: Add, ListView, x470 y510 w510 h330 Grid v$_Objekt_taxa, lnr|AccNo|BildeNo|Bildefilnavn|Kommentar|Motiv
+Gui, 1: Add, ListView, x470 y510 w510 h330 Grid v$_Objekt_taxa, lnr|AccNo|BildeNo|Bildefilnavn|Kommentar|Motiv|Fotograf
 gosub List_taxa_objects
  
 
@@ -381,16 +381,19 @@ List_taxa_objects:
 			Continue
 		}
 		StringSplit, item, A_LoopReadLine, `|
-		LV_Add("",A_index,item1,item2,item3,item4,item5,item6)	
+; 		MsgBox, A_LoopReadLine = %A_LoopReadLine%
+; MsgBox, item7 = %item7%
+		LV_Add("",A_index,item1,item2,item3,item4,item5,item7)	
 	}
 
-	LV_ModifyCol(1, "0 Integer Center SortDesc")			 
+	LV_ModifyCol(1, "10 Integer Center SortDesc")			 
 	LV_ModifyCol(2, "100 Left")		 
 	LV_ModifyCol(3, "50 Integer Center")		 ; For sorting purposes, indicate that column 2 is an integer.
 	LV_ModifyCol(4, "50 Integer Center")
 	LV_ModifyCol(5, "50 Center")		 
-	LV_ModifyCol(6, "140 Left")			 
-	LV_ModifyCol(7, "1000 Left")				 
+	LV_ModifyCol(6, "140 Left")	
+	LV_ModifyCol(7, "140 Left")			 
+	LV_ModifyCol(8, "1000 Left")				 
 
 Return
 
@@ -635,14 +638,15 @@ RenameFiles:
 			FileAppend , AccNo|BildeNo|Bildefilnavn|Kommentar|Motiv|Stasjon|Fotograf|tillat nettpublisering`n%orgAccNo%|%Suffix%|%$_Filnavn%|%bildeKommentar%|%motiv%|%$_Fotostasjon%|%fotograf%|%fotoStatus%, %dest%\ProsesserteFiler.txt	
 		}
 		gosub , List_taxa_objects		
-		gosub , Refresh			;oppdaterer listview		
+		gosub , Refresh			;oppdaterer listview	
+		Gosub, PreEmptyEdits	
 	}
 
 	$_label := 0
 	$_Bilde_vist := 0			; Skal brukes i Rename: for å sjekk omman har hentet et bile med Vis_Bilde: da skal den ha verdien 1
 	GuiControl, 1: focus , %tabStop%
 	GuiControl, 1: Disable, $_RenameFiles
-	Gosub, EmptyEdits
+	
 return
 
 
@@ -668,7 +672,19 @@ EmptyEdits:				;tøm skrivefeltene
 	GuiControl, 1: focus , %tabStop%
 	Gui, 1: Show,,
 return
-		
+
+
+PreEmptyEdits:
+	$null :=
+
+	if !commentClean
+		GuiControl, 1:, bildeKommentar, %$null%
+
+	if !motivClean
+		GuiControl, 1: Choose, motiv, 0	
+Return
+
+
 NotEmptyEdits:
 	Suffix += 1
 	GuiControl, 1:, Suffix,%Suffix%
