@@ -364,67 +364,81 @@ Return
 ;===========================================================================================
 
 Vis_bilde:
-	fileCount =
-	WinGetPos, xPos, yPos
-	xPos := xPos+200
-	yPos := yPos+400
-	imageShown = 0
 	GuiControl, 1:, PicControl, *w400 *h-1 %A_ScriptDir%\vent.jpg
 	GuiControl, 1: Show, PicControl
 	gosub, PleaseWait
 
-	Loop {
-		FoundFile := ""
+	; Timeout configuration (30 seconds)
+	maxRetries := 60
+	retryInterval := 500
+	foundValidFile := false
+
+	Loop %maxRetries% {
+		fileCount := 0
+		firstFile := ""
+
+		; Count files and get the first one found
 		Loop, %workingFolder%\*.%fileExt% {
-			FoundFile := A_LoopFileFullPath
-			break
+			fileCount := A_Index
+			if (A_Index = 1)
+				firstFile := A_LoopFileFullPath
 		}
-		if (FoundFile == "") {
-			Sleep 500
+
+		; If no files, wait and retry
+		if (fileCount = 0) {
+			Sleep %retryInterval%
 			continue
 		}
-		f := FileOpen(FoundFile, "r")
+
+		; If too many files, we can stop immediately (logic requires exactly 1)
+		if (fileCount > 1) {
+			break ; Proceed to validation checks below which handle >1
+		}
+
+		; Check if the single file is ready/readable (not locked by camera writing)
+		f := FileOpen(firstFile, "r")
 		if (IsObject(f)) {
 			f.Close()
-			break
+			foundValidFile := true
+			break ; File is ready
 		}
-		Sleep 500
+
+		Sleep %retryInterval%
 	}
 
-	Gosub, Refresh
+	gosub, PleaseWaitOff
 
-	loop, %workingFolder%\*.%fileExt% {
-		SplitPath, A_LoopFileName, , , , outNameNoExt
-		fileCount := A_Index
-	}
-
-	if fileCount < 1 {
-		gosub, PleaseWaitOff
-		MsgBox, 262160, , No images found in the folder!
+	if (!foundValidFile && fileCount = 0) {
+		MsgBox, 262160, Timeout, No images found in the folder after 30 seconds!
 		GuiControl, 1:, PicControl, *w400 *h-1, % ""
 		Gui, 1: Show,,
 		Return
 	}
-	else if fileCount > 1 {
-		gosub, PleaseWaitOff
+
+	if (fileCount > 1) {
 		GuiControl, 1:, PicControl, *w400 *h-1, % ""
 		Gui, 1: Show,,
 		MsgBox, 262160, , You have more than 1 image in your "Work folder", please clean up.
 		Run %workingFolder%
 		Return
 	}
-	else {
-		GuiControl, 1:, PicControl, *w400 *h-1 %A_ScriptDir%\go.jpg
-		GuiControl, 1:, OldName, %outNameNoExt%
-		GuiControl, 1: Show, PicControl
-		gosub, PleaseWaitOff
-		imageShown = 1
-		GuiControl, 1: enable, BtnRename
-		GuiControl, 1: enable, BtnLabel
-		GuiControl, 1: enable, BtnSameObject
-		GuiControl, 1: +Default, BtnRename
-		GuiControl, Focus, TaxonUUID
-	}
+
+	; Success (Exactly 1 file found and readable)
+	SplitPath, firstFile, , , , outNameNoExt
+
+	Gosub, Refresh ; Update ListView
+
+	GuiControl, 1:, PicControl, *w400 *h-1 %A_ScriptDir%\go.jpg
+	GuiControl, 1:, OldName, %outNameNoExt%
+	GuiControl, 1: Show, PicControl
+
+	imageShown := 1
+	GuiControl, 1: enable, BtnRename
+	GuiControl, 1: enable, BtnLabel
+	GuiControl, 1: enable, BtnSameObject
+	GuiControl, 1: +Default, BtnRename
+	GuiControl, Focus, TaxonUUID
+
 Return
 
 ;==========================================================================
@@ -496,36 +510,50 @@ Return
 			return
 		}
 
-		namePart1 := newName
 		gosub, pleaseWait
 
 		global finalFilename
-
 		FileSetTime, , %outNameNoExt%.%fileExt%, A
 
-		if (isLabel = 1) {
-			if (suffix <> "") {
-				FileMove, %outNameNoExt%.%fileExt%, %destinationFolder%\%namePart1%_%namePart2%_%suffix%_Label.%fileExt%, 0
-				finalFilename = %namePart1%_%namePart2%_%suffix%_Label.%fileExt%
-			} else {
-				FileMove, %outNameNoExt%.%fileExt%, %destinationFolder%\%namePart1%_%namePart2%_Label.%fileExt%, 0
-				finalFilename = %namePart1%_%namePart2%_Label.%fileExt%
-			}
-		} else {
-			if (suffix <> "") {
-				FileMove, %outNameNoExt%.%fileExt%, %destinationFolder%\%newPrefix%%namePart1%-0%suffix%.%fileExt%, 0
-				finalFilename = %newPrefix%%namePart1%-0%suffix%.%fileExt%
-			} else {
-				FileMove, %outNameNoExt%.%fileExt%, %destinationFolder%\%namePart1%_%namePart2%.%fileExt%, 0
-				finalFilename = %namePart1%_%namePart2%.%fileExt%
-			}
+		; --- Improved Naming Logic ---
+		; Ensure suffix is formatted correctly using implicit zero padding if length is 1
+		formattedSuffix := ""
+		if (suffix <> "") {
+			formattedSuffix := (StrLen(suffix) = 1) ? "0" . suffix : suffix
 		}
+
+		targetName := ""
+
+		if (isLabel = 1) {
+			; Label Logic
+			targetName := newName
+			if (formattedSuffix <> "")
+				targetName .= "_" . formattedSuffix
+			targetName .= "_Label." . fileExt
+
+		} else {
+			; Standard Logic
+			targetName := newName
+			if (newPrefix <> "")
+				targetName := newPrefix . targetName
+
+			if (formattedSuffix <> "")
+				targetName .= "-" . formattedSuffix
+
+			targetName .= "." . fileExt
+		}
+
+		finalFilename := targetName
+		targetPath := destinationFolder . "\" . finalFilename
+
+		FileMove, %outNameNoExt%.%fileExt%, %targetPath%, 0
+		; -----------------------------
 
 		errorCount := ErrorLevel
 
 		if errorCount <> 0 {
 			gosub PleaseWaitOff
-			MsgBox, 262160, , %errorCount% files/folders could not be moved and renamed
+			MsgBox, 262160, , %errorCount% files/folders could not be moved and renamed to:`n%targetPath%
 			newName := ""
 			GuiControl, 1:, NewName, %newName%
 			Gui, 1: Show,,
@@ -534,11 +562,15 @@ Return
 			gosub, UpDateMotivationCount
 			GuiControl, 1: Hide, PicControl
 
+			; Log to file
+			logEntry := "MUSIT nummer|BildeNo|UUID|Kommentar|Bildefilnavn|Stasjon`n"
+			dataRow := newName . "|" . suffix . "|" . taxonUUID . "|" . comment . "|" . finalFilename . "|" . stationNumber
+
 			IfExist %destinationFolder%\TaxonName_Object_list.txt
 			{
-				FileAppend, `n%namePart1%|%suffix%|%taxonUUID%|%comment%|%finalFilename%|%stationNumber%, %destinationFolder%\TaxonName_Object_list.txt
+				FileAppend, `n%dataRow%, %destinationFolder%\TaxonName_Object_list.txt
 			} else {
-				FileAppend, MUSIT nummer|BildeNo|UUID|Kommentar|Bildefilnavn|Stasjon`n%namePart1%|%suffix%|%taxonUUID%|%comment%|%finalFilename%|%stationNumber%, %destinationFolder%\TaxonName_Object_list.txt
+				FileAppend, %logEntry%%dataRow%, %destinationFolder%\TaxonName_Object_list.txt
 			}
 
 			gosub, UpdateMotivation
