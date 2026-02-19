@@ -25,12 +25,19 @@ IniRead, destinationFolder, %A_ScriptDir%\settings.ini, Settings, DestinationFol
 IniRead, exportFolder, %A_ScriptDir%\settings.ini, Settings, ExportFolder, %A_Space%
 IniRead, stationNumber, %A_ScriptDir%\settings.ini, Settings, Station, %A_Space%
 IniRead, fileType, %A_ScriptDir%\settings.ini, Settings, FileType, jpg
+IniRead, catalogPrefix, %A_ScriptDir%\settings.ini, Validation, CatalogPrefix, %A_Space%
+IniRead, catalogStart, %A_ScriptDir%\settings.ini, Validation, CatalogStart, 0
+IniRead, catalogEnd, %A_ScriptDir%\settings.ini, Validation, CatalogEnd, 0
+IniRead, uuidPrefix, %A_ScriptDir%\settings.ini, Validation, UUIDPrefix, http://purl.org/nhmuio/id/
+IniRead, boxPrefix, %A_ScriptDir%\settings.ini, Validation, BoxPrefix, %A_Space%
+IniRead, boxStart, %A_ScriptDir%\settings.ini, Validation, BoxStart, 0
+IniRead, boxEnd, %A_ScriptDir%\settings.ini, Validation, BoxEnd, 0
 
 fileExt := fileType
 
 SetWorkingDir %workingFolder%
 
-Gui, 1:  Add, Tab2,h857 w1167, Program||Settings
+Gui, 1:  Add, Tab2,h857 w1080, Program||Settings
 Gui, 1:  tab, Program
 
 Gui, 1: Add, Progress, x20 y60 w120 h210 Backgroundc8b4a7 Disabled
@@ -38,57 +45,61 @@ Gui, 1: Add, Button, x30 y65 w100 h50 gNytt_Vis_bilde vBtnGetImage Default, &Get
 Gui, 1: Add, Button, x30 y135 w100 h50 gSammeobj_Vis_bilde vBtnSameObject +Disabled, Get Image `n&Same Object
 Gui, 1: Add, Button, x30 y205 w100 h50 gLabel vBtnLabel +Disabled, Get Image `nLabel
 
-Gui, 1: Add, Text, x232 y60 w90 h20, Filename
-Gui, 1: Add, Edit, r1 x232 y90 w90 h30 vOldName +disabled,
-Gui, 1: Add, Text, x342 y60 w120 h20, Catalog No.:
-Gui, 1: Add, Edit, r1 x342 y90 w120 h30 vNewName limit20,
-Gui, 1: Add, Text, x475 y60 w80 h30, Image No.
-Gui, 1: Add, Edit, r1 x475 y90 w40 h30 vSuffix, %suffix%
+Gui, 1: Add, Text, x192 y60 w90 h20, Filename
+Gui, 1: Add, Edit, r1 x192 y90 w90 h30 vOldName +disabled,
+Gui, 1: Add, Text, x302 y60 w120 h20, Catalog No.:
+Gui, 1: Add, Edit, r1 x302 y90 w120 h30 vNewName limit20,
+Gui, 1: Add, Text, x435 y60 w80 h30, Image No.
+Gui, 1: Add, Edit, r1 x435 y90 w40 h30 vSuffix, %suffix%
 
 Gui, 1: font, s13 cRed w700, Arial
-Gui, 1: Add, Text, x232 y130 w90 h30, QR-code (UUID)
-Gui, 1: Add, Edit, r1 x232 y150 w300 h30 vTaxonUUID hwndHwndTaxon, %taxonUUID%
+Gui, 1: Add, Text, x192 y130 w90 h30, QR-code (UUID)
+Gui, 1: Add, Edit, r1 x192 y150 w300 h50 vTaxonUUID hwndHwndTaxon, %taxonUUID%
 Gui, 1: font
 
-Gui, 1: Add, Text, x232 y200 w90 h20, Comment
-Gui, 1: Add, Edit, r2 x232 y220 w400 h20 vComment,
+Gui, 1: Add, Text, x192 y200 w90 h20, Boks nummer
+Gui, 1: Add, Edit, r1 x192 y220 w100 h30 vBoxNumber,
 
-Gui, 1: Add, Progress, x550 y65 w120 h60 Backgroundc8b4a7 Disabled
-Gui, 1: Add, Button, x560 y70 w100 h50 gRenameFiles vBtnRename +Disabled, Rename!
+Gui, 1: Add, Progress, x510 y65 w120 h60 Backgroundc8b4a7 Disabled
+Gui, 1: Add, Button, x520 y70 w100 h50 gRenameFiles vBtnRename +Disabled, Rename!
 
-Gui, Add, CheckBox, x560 y150 w100 h30 vbox, Validate Catalog Number
+Gui, Add, CheckBox, x520 y150 w100 h30 Checked vbox, Validate Input
 
 ;===============================================================================
 ; ListView objects
 ;===============================================================================
 
-Gui, 1: Add, ListView, x500 y350 w490 h490 Grid vObjectList, No.|Catalog No.|Img No.|UUID|Comment
+Gui, 1: Add, ListView, x440 y350 w460 h490 Grid vObjectList, No.|Box No.|Catalog No.|Img No.|UUID
 gosub List_taxa_objects
 
-Gui, 1: Add, Button, x500 y300 w120 h40 gList_taxa_objects, Update Data List
+Gui, 1: Add, Button, x780 y300 w120 h40 gList_taxa_objects, Update Data List
 
 ;===============================================================================
 
+Gui, 1: Add, Progress, x80 y370 w320 cBlue vWorking Hidden -Smooth 0x8 +Border
 Gui, 1: Add, Picture, x40 y400 vPicControl,
+Gui, 1: font, s14 cRed w700, Arial
+Gui, 1: Add, Text, x40 y400 w400 h400 vErrorText Hidden BackgroundTrans,
+Gui, 1: font
 
 ;===============================================================================
 ; File ListViews
 ;===============================================================================
-Gui, 1: Add, GroupBox, x1000 y335 w160 h520, Image Folders
+Gui, 1: Add, GroupBox, x910 y335 w160 h520, Image Folders
 
-Gui, 1: Add, Button, x1040 y360 w100 h30 gRefresh, Update File List
+Gui, 1: Add, Button, x950 y360 w100 h30 gRefresh, Update File List
 
-Gui, 1: Add, ListView, x1030 y400 w120 h240 vDestView, Destination Files
+Gui, 1: Add, ListView, x940 y400 w120 h240 vDestView, Destination Files
 Loop, %destinationFolder%\*.%fileExt%
 	LV_Add("", A_LoopFileName)
 
-Gui, 1: Add, Button,  x1040 y650 w100 h30 gOpendest, Open Dest. Folder
+Gui, 1: Add, Button,  x950 y650 w100 h30 gOpendest, Open Dest. Folder
 
-Gui, 1: Add, ListView, x1030 y700 w120 h100 vWorkList, Working Files
+Gui, 1: Add, ListView, x940 y700 w120 h100 vWorkList, Working Files
 Loop, %workingFolder%\*.%fileExt%
 	LV_Add("", A_LoopFileName)
 
-Gui, 1: Add, Button, x1040 y820 w100 h30 gOpenwork, Open Work Folder
+Gui, 1: Add, Button, x950 y820 w100 h30 gOpenwork, Open Work Folder
 
 newName := ""
 
@@ -96,16 +107,16 @@ newName := ""
 ; Motivation part
 ;===============================================================================
 
-Gui, 1: Add, GroupBox, x900 y50 w220 h240, Image Count
+Gui, 1: Add, GroupBox, x660 y50 w250 h240, Image Count
 
-Gui, 1: Add, Text, x930 y90 w40 h30, Total
-Gui, 1: Add, Edit, Right r1 x930 y120 w40 h30 vTotalCount +disabled,
-Gui, 1: Add, Text, x990 y90 w40 h30, Yesterday
-Gui, 1: Add, Edit, Right r1 x990 y120 w40 h30 vYesterdayCount +disabled,
-Gui, 1: Add, Text, x1050 y90 w40 h30, Today
-Gui, 1: Add, Edit, Right r1 x1050 y120 w40 h30 vTodayCount +disabled,
-Gui, 1: Add, Progress, Vertical vProgressYesterday x1000 y160 w30 h110,
-Gui, 1: Add, Progress, Vertical vProgressToday x1060 y160 w30 h110,
+Gui, 1: Add, Text, x690 y90 w40 h30, Total
+Gui, 1: Add, Edit, Right r1 x690 y120 w40 h30 vTotalCount +disabled,
+Gui, 1: Add, Text, x750 y90 w50 h30, Yesterday
+Gui, 1: Add, Edit, Right r1 x750 y120 w40 h30 vYesterdayCount +disabled,
+Gui, 1: Add, Text, x810 y90 w40 h30, Today
+Gui, 1: Add, Edit, Right r1 x810 y120 w40 h30 vTodayCount +disabled,
+Gui, 1: Add, Progress, Vertical vProgressYesterday x760 y160 w30 h110,
+Gui, 1: Add, Progress, Vertical vProgressToday x820 y160 w30 h110,
 
 ;=============================================================
 ; Date Logic
@@ -143,7 +154,7 @@ Gui, 1: Add, Edit, r1 x172 y60 w80 h30 vPrefix, %prefix%
 Gui, 1: Add, Text, x272 y60 w80 h30, New filename prefix
 Gui, 1: Add, Edit, r1 x372 y60 w80 h30 vNewPrefix, %newPrefix%
 Gui, 1: Add, Text, x500 y60 w80 h30, Suffix
-Gui, 1: Add, Edit, r1 x542 y60 w80 h30 vSuffix, %suffix%
+Gui, 1: Add, Edit, r1 x542 y60 w80 h30 vSettingsSuffix, %suffix%
 
 Gui, 1: Add, Text, x72 y120 w150 h30, Set Station No
 Gui, 1: Add, Edit, r1 x170 y120 w50 h30 vStationNumber, %stationNumber%
@@ -162,15 +173,29 @@ Gui, 1: Add, Radio, vFileType x172 y300 w50 h30, tif
 Gui, 1: Add, Radio, x222 y300 w50 h30, jpg
 Gui, 1: Add, Radio, x272 y300 w50 h30, pdf
 
-Gui, 1: Add, Button, gSavePref x172 y450 w100 h30, Save Settings
+Gui, Add, GroupBox, x62 y350 w550 h140, Validation Settings
+Gui, 1: Add, Text, x72 y375 w150 h20, Catalog Prefix/Range
+Gui, 1: Add, Edit, r1 x182 y370 w150 h20 vCatalogPrefix, %catalogPrefix%
+Gui, 1: Add, Edit, r1 x342 y370 w60 h20 vCatalogStart, %catalogStart%
+Gui, 1: Add, Text, x407 y375 w10 h20, -
+Gui, 1: Add, Edit, r1 x422 y370 w60 h20 vCatalogEnd, %catalogEnd%
 
-Gui, 1: Show, %guiPosition% h880 w1190, Object_photo
+Gui, 1: Add, Text, x72 y405 w100 h20, UUID Prefix
+Gui, 1: Add, Edit, r1 x182 y400 w300 h20 vUUIDPrefix, %uuidPrefix%
+
+Gui, 1: Add, Text, x72 y435 w100 h20, Box Prefix/Range
+Gui, 1: Add, Edit, r1 x182 y430 w150 h20 vBoxPrefix, %boxPrefix%
+Gui, 1: Add, Edit, r1 x342 y430 w60 h20 vBoxStart, %boxStart%
+Gui, 1: Add, Text, x407 y435 w10 h20, -
+Gui, 1: Add, Edit, r1 x422 y430 w60 h20 vBoxEnd, %boxEnd%
+
+Gui, 1: Add, Button, gSavePref x172 y510 w100 h30, Save Settings
+
+Gui, 1: Show, %guiPosition% h880 w1100, Object_photo
 
 GuiControl, , %fileType%, 1
 
 OnMessage(0x111, "WM_Command")
-
-Gui, 3: Add, Progress, -Smooth vWorking 0x8 w250 h18
 
 return
 
@@ -324,12 +349,21 @@ SavePref:
 
 	IniWrite, %prefix%, %A_ScriptDir%\settings.ini, Settings, Prefix
 	IniWrite, %newPrefix%, %A_ScriptDir%\settings.ini, Settings, NyPrefix
-	IniWrite, %suffix%, %A_ScriptDir%\settings.ini, Settings, Suffix
+	IniWrite, %SettingsSuffix%, %A_ScriptDir%\settings.ini, Settings, Suffix
 	IniWrite, %workingFolder%, %A_ScriptDir%\settings.ini, Settings, WorkingFolder
 	IniWrite, %destinationFolder%, %A_ScriptDir%\settings.ini, Settings, DestinationFolder
 	IniWrite, %exportFolder%, %A_ScriptDir%\settings.ini, Settings, ExportFolder
 	IniWrite, %stationNumber%, %A_ScriptDir%\settings.ini, Settings, Station
 	IniWrite, %fileType%, %A_ScriptDir%\settings.ini, Settings, FileType
+
+	IniWrite, %catalogPrefix%, %A_ScriptDir%\settings.ini, Validation, CatalogPrefix
+	IniWrite, %catalogStart%, %A_ScriptDir%\settings.ini, Validation, CatalogStart
+	IniWrite, %catalogEnd%, %A_ScriptDir%\settings.ini, Validation, CatalogEnd
+	IniWrite, %uuidPrefix%, %A_ScriptDir%\settings.ini, Validation, UUIDPrefix
+	IniWrite, %boxPrefix%, %A_ScriptDir%\settings.ini, Validation, BoxPrefix
+	IniWrite, %boxStart%, %A_ScriptDir%\settings.ini, Validation, BoxStart
+	IniWrite, %boxEnd%, %A_ScriptDir%\settings.ini, Validation, BoxEnd
+
 	Reload
 Return
 
@@ -339,24 +373,30 @@ List_taxa_objects:
 	LV_Delete()
 	Loop, read, %destinationFolder%\TaxonName_Object_list.txt
 	{
-		if a_index = 1
+		if (A_Index = 1)
 			continue
-		else {
-			StringSplit, item, A_LoopReadLine, `|
-			LV_Add("",A_index,item1,item2,item3,item4)
+
+		StringSplit, item, A_LoopReadLine, `|
+		; Heuristic: Check if item3 is long (UUID -> Old format) or short (Suffix -> New format)
+		if (StrLen(item3) > 15) {
+			; Old Format: Name|Suffix|UUID... -> Display: Index, EmptyBox, Name, Suffix, UUID
+			LV_Add("", A_index, "", item1, item2, item3)
+		} else {
+			; New Format: Box|Name|Suffix|UUID... -> Display: Index, Box, Name, Suffix, UUID
+			LV_Add("", A_index, item1, item2, item3, item4)
 		}
 	}
 	LV_ModifyCol(1, 0)
-	LV_ModifyCol(2, 100)
-	LV_ModifyCol(3, 50)
-	LV_ModifyCol(4, 200)
-	LV_ModifyCol(5, 300)
+	LV_ModifyCol(2, 50)
+	LV_ModifyCol(3, 100)
+	LV_ModifyCol(4, 50)
+	LV_ModifyCol(5, 200)
 	LV_ModifyCol(1, "Integer")
 	LV_ModifyCol(1, "SortDesc")
 	LV_ModifyCol(2, "Left")
 	LV_ModifyCol(3, "Left")
-	LV_ModifyCol(4, "left")
-	LV_ModifyCol(5, "Left")
+	LV_ModifyCol(4, "Left")
+	LV_ModifyCol(5, "left")
 Return
 
 ;===========================================================================================
@@ -364,12 +404,13 @@ Return
 ;===========================================================================================
 
 Vis_bilde:
+	GuiControl, 1: Hide, ErrorText
 	GuiControl, 1:, PicControl, *w400 *h-1 %A_ScriptDir%\vent.jpg
 	GuiControl, 1: Show, PicControl
 	gosub, PleaseWait
 
-	; Timeout configuration (30 seconds)
-	maxRetries := 60
+	; Timeout configuration (5 seconds)
+	maxRetries := 10
 	retryInterval := 500
 	foundValidFile := false
 
@@ -409,21 +450,20 @@ Vis_bilde:
 	gosub, PleaseWaitOff
 
 	if (!foundValidFile && fileCount = 0) {
-		MsgBox, 262160, Timeout, No images found in the folder after 30 seconds!
-		GuiControl, 1:, PicControl, *w400 *h-1, % ""
+		ShowError("No images found in the folder after 5 seconds!")
 		Gui, 1: Show,,
 		Return
 	}
 
 	if (fileCount > 1) {
-		GuiControl, 1:, PicControl, *w400 *h-1, % ""
+		ShowError("You have more than 1 image in your ""Work folder"", please clean up.")
 		Gui, 1: Show,,
-		MsgBox, 262160, , You have more than 1 image in your "Work folder", please clean up.
 		Run %workingFolder%
 		Return
 	}
 
 	; Success (Exactly 1 file found and readable)
+	ClearError() ; Clear any previous errors
 	SplitPath, firstFile, , , , outNameNoExt
 
 	Gosub, Refresh ; Update ListView
@@ -479,6 +519,7 @@ Return
 	Sammeobj_Vis_bilde:
 		sameOrNew = 2
 		gosub Vis_bilde
+		gosub NotEmptyEdits
 		gosub RenameFiles
 	return
 
@@ -495,20 +536,113 @@ Return
 		Gui 1: submit, NoHide
 
 		If (imageShown <> 1) {
-			MsgBox No image found. Press "Get Image"
+			ShowError("No image found. Press ""Get Image""")
 			return
 		}
 
-		if (taxonUUID = "") {
-			SoundSet, 100
-			MsgBox, 262160, , You have forgotten the UUID (QR code)!
+		if (taxonUUID = "" && sameOrNew != 2) {
+			ShowError("You have forgotten the UUID (QR code)!")
 			return
 		}
 
 		if (newName = "") {
-			MsgBox, 262160, , You have forgotten the filename!
+			ShowError("You have forgotten the filename!")
 			return
 		}
+
+		if (BoxNumber = "") {
+			ShowError("You have forgotten the Box Number!")
+			return
+		}
+
+		; --- Validation Logic ---
+
+		; Only run validation if "Validate Input" is checked
+		if (box = 1) {
+
+			; 1. Catalog Number Validation
+			; Strict Prefix Check
+			if (CatalogPrefix != "" && !RegExMatch(newName, "^" . CatalogPrefix)) {
+				ShowError("Catalog Number must start with prefix: " . CatalogPrefix)
+				return
+			}
+
+			; Strict Range Check
+			if (CatalogStart != 0 || CatalogEnd != 0) {
+				; Extract numeric part by removing prefix
+				numPart := newName
+				if (CatalogPrefix != "")
+					StringReplace, numPart, numPart, %CatalogPrefix%,, All
+
+				if numPart is not number
+				{
+					ShowError("Catalog Number must contain a valid number after prefix!")
+					return
+				}
+
+				; Check Min (Inclusive)
+				if (CatalogStart != 0 && numPart < CatalogStart) {
+					ShowError("Catalog Number is too low! Min: " . CatalogStart . " (Value: " . numPart . ")")
+					return
+				}
+				; Check Max (Inclusive)
+				if (CatalogEnd != 0 && numPart > CatalogEnd) {
+					ShowError("Catalog Number is too high! Max: " . CatalogEnd . " (Value: " . numPart . ")")
+					return
+				}
+			}
+
+			; 2. UUID Validation
+			if (UUIDPrefix != "") {
+				if (!RegExMatch(taxonUUID, "^" . UUIDPrefix)) {
+					ShowError("UUID must start with prefix: " . UUIDPrefix)
+					return
+				}
+
+				; Check valid UUID format (8-4-4-4-12 hex) after prefix
+				uuidSuffix := taxonUUID
+				StringReplace, uuidSuffix, uuidSuffix, %UUIDPrefix%,, All
+				if (!RegExMatch(uuidSuffix, "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")) {
+					ShowError("Invalid UUID format after prefix!")
+					return
+				}
+			}
+
+			; 3. Box Number Validation
+			if (BoxPrefix != "" || BoxStart != 0 || BoxEnd != 0) {
+				; Strict Prefix Check
+				if (BoxPrefix != "" && !RegExMatch(BoxNumber, "^" . BoxPrefix)) {
+					ShowError("Box Number must start with prefix: " . BoxPrefix)
+					return
+				}
+
+				; Strict Range Check
+				if (BoxStart != 0 || BoxEnd != 0) {
+					numPart := BoxNumber
+					if (BoxPrefix != "")
+						StringReplace, numPart, numPart, %BoxPrefix%,, All
+
+					if numPart is not number
+					{
+						ShowError("Box Number must contain a valid number after prefix!")
+						return
+					}
+
+					; Check Min (Inclusive)
+					if (BoxStart != 0 && numPart < BoxStart) {
+						ShowError("Box Number is too low! Min: " . BoxStart . " (Value: " . numPart . ")")
+						return
+					}
+					; Check Max (Inclusive)
+					if (BoxEnd != 0 && numPart > BoxEnd) {
+						ShowError("Box Number is too high! Max: " . BoxEnd . " (Value: " . numPart . ")")
+						return
+					}
+				}
+			}
+		}
+
+		; ------------------------
 
 		gosub, pleaseWait
 
@@ -551,20 +685,22 @@ Return
 
 		errorCount := ErrorLevel
 
-		if errorCount <> 0 {
+		if (errorCount != 0) {
 			gosub PleaseWaitOff
-			MsgBox, 262160, , %errorCount% files/folders could not be moved and renamed to:`n%targetPath%
+			ShowError(errorCount . " files/folders could not be moved`nand renamed to:`n" . targetPath)
 			newName := ""
 			GuiControl, 1:, NewName, %newName%
 			Gui, 1: Show,,
 			Return
 		} else {
 			gosub, UpDateMotivationCount
-			GuiControl, 1: Hide, PicControl
+			GuiControl, 1:, PicControl, *w400 *h-1 %A_ScriptDir%\done.jpg
+			GuiControl, 1: Show, PicControl
+			GuiControl, 1: Hide, ErrorText
 
 			; Log to file
-			logEntry := "MUSIT nummer|BildeNo|UUID|Kommentar|Bildefilnavn|Stasjon`n"
-			dataRow := newName . "|" . suffix . "|" . taxonUUID . "|" . comment . "|" . finalFilename . "|" . stationNumber
+			logEntry := "Boks nr|MUSIT nummer|BildeNo|UUID|Bildefilnavn|Stasjon`n"
+			dataRow := boxNumber . "|" . newName . "|" . suffix . "|" . taxonUUID . "|" . finalFilename . "|" . stationNumber
 
 			IfExist %destinationFolder%\TaxonName_Object_list.txt
 			{
@@ -587,15 +723,14 @@ Return
 	EmptyEdits:
 		GuiControl, 1:, NewName, % ""
 		GuiControl, 1:, OldName, % ""
-		GuiControl, 1:, Comment, % ""
 		GuiControl, 1:, Suffix, 1
+
 		GuiControl, 1: focus, NewName
 		Gui, 1: Show,,
 	return
 
 	NotEmptyEdits:
 		suffix := suffix + 1
-		GuiControl, 1:, Comment, % ""
 		GuiControl, 1:, Suffix, %suffix%
 		GuiControl, 1: focus, BtnSameObject
 		Gui, 1: Show,,
@@ -620,18 +755,17 @@ Return
 	return
 
 	PleaseWait:
-		Gui, 3: Show, , Please wait...
-		SetTimer Scroll, 1, 100
-		Sleep 200
+		GuiControl, 1: Show, Working
+		SetTimer Scroll, 20
 	return
 
 	PleaseWaitOff:
 		SetTimer Scroll, Off
-		Gui, 3: Hide
+		GuiControl, 1: Hide, Working
 	return
 
 	Scroll:
-		GuiControl, 3:, Working, +3
+		GuiControl, 1:, Working, +2
 	Return
 
 	Esc::
@@ -643,4 +777,20 @@ Return
 		} else {
 			IniWrite, x100 y100, %A_ScriptDir%\settings.ini, window position, gui_position
 			ExitApp
+		}
+
+		;===========================================================================================
+		; Error Handling
+		;===========================================================================================
+
+		ShowError(msg) {
+			GuiControl, 1: Hide, PicControl
+			GuiControl, 1:, ErrorText, %msg%
+			GuiControl, 1: Show, ErrorText
+			SoundPlay, *48 ; Play warning sound
+		}
+
+		ClearError() {
+			GuiControl, 1: Hide, ErrorText
+			GuiControl, 1: Show, PicControl
 		}
